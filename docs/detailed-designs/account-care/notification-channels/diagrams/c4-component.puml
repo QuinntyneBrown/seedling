@@ -1,0 +1,45 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Notification channels
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(settings, "SettingsPage", "Angular page", "Notification channel radio group")
+  Component(perm, "PushPermissionService", "Angular service", "Notification.requestPermission, SwPush")
+  Component(guard, "authGuard", "Angular CanActivateFn", "Sends signed-out users to sign-in with returnUrl")
+  Component(client, "HttpNotificationSettingsService", "NOTIFICATION_SETTINGS_SERVICE", "Channel and push subscription calls")
+}
+Container_Boundary(api, "Seedlings API (application layer shared with the Worker)") {
+  Component(ctrl, "NotificationSettingsController", "ASP.NET Core controller", "/api/me/notification-settings, /api/me/push-subscriptions")
+  Component(setch, "SetNotificationChannelCommandHandler", "MediatR handler", "Stores ContactChannel")
+  Component(sub, "SavePushSubscriptionCommandHandler", "MediatR handler", "Stores or revokes PushSubscription")
+  Component(onstatus, "CaseStatusChangedNotificationHandler", "MediatR INotificationHandler", "ReadyToApprove -> ApprovalNeeded")
+  Component(disp, "NotificationDispatcher", "INotificationDispatcher", "Writes Notification, applies channel policy, sends")
+  Component(policy, "NotificationChannelPolicy", "Domain service", "Chosen channel or email fallback")
+  Component(retry, "PendingNotificationSender", "BackgroundService", "Retries Pending rows")
+  Component(webpush, "WebPushSender", "Infrastructure/WebPush", "VAPID-signed Web Push")
+  Component(smss, "SmsSender", "Infrastructure/Sms", "Vendor <TO SUPPLY>")
+  Component(mail, "EmailSender", "Infrastructure/Email", "Vendor <TO SUPPLY>")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ParentAccount, PushSubscription, Notification")
+}
+System_Ext(ext, "Push, SMS and email services", "Delivery")
+
+Rel(settings, perm, "Asks permission when push is chosen")
+Rel(settings, client, "Saves channel")
+Rel(perm, client, "Saves subscription or denial")
+Rel(client, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, setch, "SetNotificationChannelCommand")
+Rel(ctrl, sub, "SavePushSubscriptionCommand")
+Rel(onstatus, disp, "DispatchAsync")
+Rel(disp, policy, "Resolves channel")
+Rel(disp, webpush, "Push")
+Rel(disp, smss, "SMS")
+Rel(disp, mail, "Email")
+Rel(retry, disp, "Re-sends Pending")
+Rel(webpush, ext, "Sends")
+Rel(smss, ext, "Sends")
+Rel(mail, ext, "Sends")
+Rel(setch, db, "Writes", "EF Core")
+Rel(sub, db, "Writes", "EF Core")
+Rel(disp, db, "Writes Notification", "EF Core")
+@enduml

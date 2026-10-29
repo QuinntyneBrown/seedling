@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Choose a notification channel
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "SettingsPage" as page
+  participant "PushPermissionService" as perm
+  participant "HttpNotificationSettingsService (NOTIFICATION_SETTINGS_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "NotificationSettingsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SetNotificationChannelCommandHandler" as setch
+  participant "SavePushSubscriptionCommandHandler" as sub
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Pick App notifications, Text message or Email
+page -> client : setChannel(channel)
+client -> controller : PUT /api/me/notification-settings {channel}
+controller -> setch : Send SetNotificationChannelCommand
+setch -> db : Load ParentAccount (current parent)
+alt Sms chosen and no verified phone, or Email chosen and no email
+  setch --> controller : ValidationException
+  controller --> client : 400 ProblemDetails
+  client --> page : Field error under the choice
+else allowed
+  setch -> db : ContactChannel = channel, save
+  controller --> client : 204 No Content
+end
+opt channel is Push
+  page -> perm : requestPermission()
+  perm -> perm : Notification.requestPermission()
+  alt granted
+    perm -> perm : SwPush.requestSubscription(VAPID public key)
+    perm -> client : savePushSubscription(endpoint, keys, "granted")
+  else denied
+    perm -> client : savePushSubscription(null, "denied")
+    page --> parent : Messages will come by email (L2-026 AC2)
+  end
+  client -> controller : POST /api/me/push-subscriptions
+  controller -> sub : Send SavePushSubscriptionCommand
+  sub -> db : Store subscription, or revoke all on "denied"
+  controller --> client : 204 No Content
+end
+page --> parent : Choice saved
+@enduml

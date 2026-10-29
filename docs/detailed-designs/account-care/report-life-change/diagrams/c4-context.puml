@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Report a life change
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Reports address, new child, custody or income change in")
+Rel(seedlings, reviewer, "Routes custody changes to")
+Rel(seedlings, provider, "Sends approved address update to", "<TO SUPPLY>")
+Rel(seedlings, esdc, "Sends approved new bond claim to", "SDE 0093")
+@enduml

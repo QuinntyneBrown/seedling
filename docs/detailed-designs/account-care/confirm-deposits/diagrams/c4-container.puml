@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Confirm deposits
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(admin, "Admin app", "Angular", "Reviewer and operator console (frontend/projects/admin)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(notify, "Push, SMS and email services", "Deliver the overdue-deposit alert")
+
+Rel(parent, pwa, "Opens the case screen", "HTTPS")
+Rel(reviewer, admin, "Works the review queue", "HTTPS")
+Rel(pwa, api, "GET /api/cases/{caseId}/deposits", "JSON/HTTPS")
+Rel(worker, provider, "Reads deposit reports", "<TO SUPPLY>")
+Rel(worker, db, "Records deposits, flags overdue claims", "EF Core")
+Rel(worker, notify, "Sends overdue alert")
+Rel(api, db, "Reads deposits", "EF Core")
+Rel(admin, api, "Reads review items", "JSON/HTTPS")
+@enduml

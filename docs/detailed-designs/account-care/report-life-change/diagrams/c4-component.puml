@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Report a life change
+
+Container(pwa, "Seedlings PWA", "Angular 21", "LifeChangePage, LifeChangeAddressPage, LifeChangeIncomePage")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "LifeChangesController", "ASP.NET Core controller", "POST /api/life-changes")
+  Component(handler, "ReportLifeChangeCommandHandler", "MediatR handler", "Records the change and picks a processor by kind")
+  Component(addr, "AddressChangeProcessor", "Application service", "Stores address, queues provider update for approval")
+  Component(income, "IncomeChangeProcessor", "Application service", "Re-runs eligibility, starts bond claim for approval")
+  Component(child, "NewChildChangeProcessor", "Application service", "Returns the add-child route (L2-009)")
+  Component(custody, "CustodyChangeProcessor", "Application service", "Queues a ReviewItem")
+  Component(elig, "EligibilityEvaluator", "Domain service (eligibility/check-eligibility)", "Deterministic CLB and CESG rules")
+  Component(prefill, "Sde0093Prefiller", "Application service (case-agent/prefill-forms)", "Builds a PrefilledForm for approval")
+  Component(audit, "IAuditTrail", "Application port", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "LifeChange, IntakeField, ProviderUpdate, EligibilityResult, ReviewItem")
+}
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, handler, "Sends ReportLifeChangeCommand")
+Rel(handler, addr, "Address")
+Rel(handler, income, "Income")
+Rel(handler, child, "NewChild")
+Rel(handler, custody, "Custody")
+Rel(income, elig, "Evaluates")
+Rel(income, prefill, "Prefills SDE 0093")
+Rel(handler, audit, "Appends entry")
+Rel(handler, db, "Writes in one unit of work", "EF Core")
+@enduml

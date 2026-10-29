@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — Open a deep link while signed out
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Router" as router
+  participant "authGuard" as guard
+  participant "SignInPage" as signin
+  participant "CasePage" as page
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as controller
+end box
+parent -> router : Open https://<host>/cases/{caseId}
+router -> guard : canActivate(/cases/{caseId})
+alt no valid session
+  guard --> router : UrlTree /sign-in?returnUrl=/cases/{caseId} (L2-026 AC3)
+  router -> signin : Show sign-in
+  parent -> signin : Sign in and verify code (identity-and-access)
+  signin -> signin : Accept returnUrl only if it is a relative in-app path
+  signin -> router : navigateByUrl(returnUrl)
+  router -> guard : canActivate again
+end
+guard --> router : true
+router -> page : Activate CasePage
+page -> controller : GET /api/cases/{caseId} with access token
+controller -> controller : Fallback policy and case ownership (L2-045)
+alt case is the parent's
+  controller --> page : 200 case
+  page --> parent : Case shown
+else other parent's case
+  controller --> page : 404 ProblemDetails
+  page --> parent : Not-found state, no case data
+end
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Confirm deposits
+
+Container(pwa, "Seedlings PWA", "Angular 21", "CasePage renders the Grants card from DEPOSITS_SERVICE")
+System_Ext(provider, "RESP provider", "Reports deposits")
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "DepositCheckJob", "BackgroundService, RunOnceThenExit", "Daily: imports deposit reports, then flags overdue claims")
+}
+Container_Boundary(api, "Seedlings API (application layer shared with the Worker)") {
+  Component(ctrl, "DepositsController", "ASP.NET Core controller", "GET /api/cases/{caseId}/deposits")
+  Component(query, "GetCaseDepositsQueryHandler", "MediatR handler", "Returns the case's expected and received deposits")
+  Component(record, "RecordExpectedDepositCommandHandler", "MediatR handler", "Opens an ExpectedDeposit when a claim is made")
+  Component(confirm, "ConfirmDepositCommandHandler", "MediatR handler", "Matches a reported deposit and stores amount and date")
+  Component(flag, "FlagOverdueDepositsCommandHandler", "MediatR handler", "Alerts the parent and queues review after 90 days")
+  Component(policy, "DepositOverduePolicy", "Domain service", "90-day overdue rule (L2-023)")
+  Component(feed, "IProviderAccountFeed", "Application port", "Deposit reports per open account")
+  Component(adapter, "ProviderAccountFeed", "Infrastructure/Providers", "Adapter for the provider channel <TO SUPPLY>")
+  Component(dispatch, "INotificationDispatcher", "Application port", "Sends on the parent's chosen channel")
+  Component(audit, "IAuditTrail", "Application port", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ExpectedDeposit, ReviewItem, AuditEntry")
+}
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, query, "Sends GetCaseDepositsQuery")
+Rel(job, feed, "Reads deposit reports")
+Rel(adapter, provider, "Reads", "<TO SUPPLY>")
+Rel(feed, adapter, "Implemented by")
+Rel(job, confirm, "Sends ConfirmDepositCommand")
+Rel(job, flag, "Sends FlagOverdueDepositsCommand")
+Rel(flag, policy, "Evaluates")
+Rel(flag, dispatch, "Alerts parent")
+Rel(confirm, audit, "Appends entry")
+Rel(flag, audit, "Appends entry")
+Rel(query, db, "Reads", "EF Core")
+Rel(record, db, "Writes", "EF Core")
+Rel(confirm, db, "Writes", "EF Core")
+Rel(flag, db, "Writes", "EF Core")
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — View deposits on the case screen
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+  participant "HttpDepositsService (DEPOSITS_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DepositsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetCaseDepositsQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Open /cases/{caseId}
+page -> client : getDeposits(caseId)
+client -> controller : GET /api/cases/{caseId}/deposits
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send GetCaseDepositsQuery
+handler -> db : Load case scoped to current parent (L2-045)
+alt case not owned by parent
+  db --> handler : No row
+  handler --> controller : NotFoundException
+  controller --> client : 404 ProblemDetails
+else case owned by parent
+  db --> handler : ExpectedDeposits
+  handler --> controller : DepositDto list
+  controller --> client : 200 JSON
+  client --> page : deposits signal
+  page --> parent : Grants card shows amount and date per deposit (L2-023 AC1)
+end
+@enduml

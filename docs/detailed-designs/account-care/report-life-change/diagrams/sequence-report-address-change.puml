@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Report an address change
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "LifeChangePage" as page
+  participant "HttpLifeChangesService (LIFE_CHANGES_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "LifeChangesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ReportLifeChangeCommandHandler" as handler
+  participant "AddressChangeProcessor" as proc
+  participant "IAuditTrail" as audit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Choose address, Continue, enter new address, Save
+page -> client : report({kind: Address, address, clientRequestId})
+client -> controller : POST /api/life-changes
+controller -> controller : Authenticate, validate (ReportLifeChangeCommandValidator)
+controller -> handler : Send ReportLifeChangeCommand
+handler -> db : Find LifeChange by ClientRequestId
+alt already recorded (retry)
+  db --> handler : Existing LifeChange
+  handler --> controller : Existing LifeChangeResultDto
+else new
+  handler -> proc : ProcessAsync(change, command)
+  proc -> db : Update parent-address IntakeField on each of the parent's cases (L2-025 AC1)
+  loop each case with a provider account
+    proc -> db : Add ProviderUpdate(Status AwaitingApproval) (L2-025 AC1, L2-020)
+  end
+  proc --> handler : ProviderUpdateQueued
+  handler -> audit : Append "Address changed; provider update waiting for approval"
+  handler -> db : Save LifeChange and changes in one unit of work
+  db --> handler : Commit result
+  handler --> controller : LifeChangeResultDto
+end
+controller --> client : 201 Created
+client --> page : Result
+page --> parent : Address saved; review what goes to the provider (approve screen)
+@enduml

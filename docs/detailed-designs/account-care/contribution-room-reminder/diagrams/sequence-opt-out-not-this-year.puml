@@ -1,0 +1,51 @@
+@startuml
+title UML sequence behaviour — Tap Not this year
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+  participant "HttpContributionRemindersService (CONTRIBUTION_REMINDERS_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ContributionRemindersController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "OptOutOfContributionReminderCommandHandler" as handler
+  participant "ContributionReminder" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Open reminder deep link (sign-in first if signed out, L2-026)
+page -> client : getCurrent(caseId)
+client -> controller : GET /api/cases/{caseId}/contribution-reminders/current
+controller --> client : 200 room, grant, OptedOut false
+client --> page : reminder signal
+page --> parent : Grant room row with "Not this year" button
+parent -> page : Tap "Not this year"
+page -> client : optOut(caseId, year)
+client -> controller : POST /api/cases/{caseId}/contribution-reminders/{year}/opt-out
+controller -> handler : Send OptOutOfContributionReminderCommand
+handler -> db : Load reminder for case and year, scoped to current parent (L2-045)
+db --> handler : ContributionReminder
+handler -> entity : OptOut(now) — no-op when already opted out
+handler -> db : Save changes
+db --> handler : Commit result
+handler --> controller : Ok
+controller --> client : 204 No Content
+client --> page : OptedOut true
+page --> parent : Confirmation; no further reminders this year (L2-024 AC2)
+@enduml

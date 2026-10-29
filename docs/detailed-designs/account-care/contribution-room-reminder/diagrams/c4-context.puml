@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Contribution room reminder
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(seedlings, provider, "Reads this year's contributions from", "<TO SUPPLY> channel")
+Rel(seedlings, push, "Sends yearly reminder via")
+Rel(seedlings, sms, "Sends yearly reminder via")
+Rel(seedlings, email, "Sends yearly reminder via")
+Rel(parent, seedlings, "Reads room and grant, taps Not this year in")
+@enduml

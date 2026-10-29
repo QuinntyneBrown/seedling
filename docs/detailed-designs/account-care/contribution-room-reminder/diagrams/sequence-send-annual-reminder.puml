@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Send the yearly contribution room reminder
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "ContributionReminderJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SendContributionRemindersCommandHandler" as handler
+  participant "ReminderSchedule" as schedule
+  participant "CesgRoomCalculator" as calc
+  participant "INotificationDispatcher" as dispatch
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ProviderAccountFeed" as feed
+  database "Seedlings database" as db
+end box
+participant "RESP provider" as provider
+actor "Parent" as parent
+job -> handler : Send SendContributionRemindersCommand (daily run)
+handler -> db : Load cases with an open account and no ContributionReminder for this Year
+db --> handler : Candidate cases
+loop each candidate case
+  handler -> schedule : IsDue(case, year, today)
+  schedule --> handler : due or not due
+  opt due
+    handler -> feed : GetContributionsAsync(accountNumber, year)
+    feed -> provider : Read contributions (channel <TO SUPPLY>)
+    provider --> feed : Contributed this year
+    feed --> handler : Amount
+    handler -> calc : Calculate(child, year, contributed)
+    calc --> handler : RoomRemaining, MatchingGrant
+    handler -> db : Insert ContributionReminder(CaseId, Year) — unique per case and year (L2-024 AC3)
+    alt unique index violated
+      db --> handler : Duplicate (already sent this year)
+    else inserted
+      db --> handler : Commit result
+      handler -> dispatch : DispatchAsync(ContributionRoom, room, grant, "Not this year" link /cases/{caseId}?reminder={year}) (L2-024 AC1)
+      dispatch --> parent : Reminder on chosen channel, no call to contribute
+    end
+  end
+end
+handler --> job : Count sent
+@enduml

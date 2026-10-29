@@ -1,0 +1,112 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Report a life change
+
+enum LifeChangeKind {
+  Address
+  NewChild
+  Custody
+  Income
+}
+
+enum LifeChangeOutcome {
+  ProviderUpdateQueued
+  AddressStored
+  EligibilityUnchanged
+  BondClaimStarted
+  OpenChildProfile
+  RoutedToReview
+}
+
+enum ProviderUpdateStatus {
+  AwaitingApproval
+  Approved
+  Declined
+  Sent
+}
+
+class LifeChange {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid? CaseId
+  +LifeChangeKind Kind
+  +Guid ClientRequestId
+  +DateTimeOffset ReportedAt
+  +string Payload
+  +LifeChangeOutcome Outcome
+}
+
+class ProviderUpdate {
+  +Guid Id
+  +Guid CaseId
+  +Guid LifeChangeId
+  +string ChangedFieldsJson
+  +ProviderUpdateStatus Status
+  +DateTimeOffset QueuedAt
+}
+
+class ReportLifeChangeCommand {
+  +Guid ClientRequestId
+  +LifeChangeKind Kind
+  +Guid? CaseId
+  +AddressDto? Address
+  +string? IncomeBand
+}
+
+class ReportLifeChangeCommandValidator
+class ReportLifeChangeCommandHandler {
+  +Handle(command: ReportLifeChangeCommand): Task<LifeChangeResultDto>
+}
+
+interface ILifeChangeProcessor {
+  +Kind: LifeChangeKind
+  +ProcessAsync(change: LifeChange, command: ReportLifeChangeCommand): Task<LifeChangeOutcome>
+}
+class AddressChangeProcessor
+class IncomeChangeProcessor
+class NewChildChangeProcessor
+class CustodyChangeProcessor
+
+class LifeChangeResultDto {
+  +Guid LifeChangeId
+  +LifeChangeOutcome Outcome
+  +string? NextRoute
+}
+
+class EligibilityEvaluator {
+  +Evaluate(answers: EligibilityAnswers): EligibilityResult
+}
+class IntakeField
+class ReviewItem
+class PrefilledForm
+
+ReportLifeChangeCommandValidator ..> ReportLifeChangeCommand : validates
+ReportLifeChangeCommandHandler ..> ReportLifeChangeCommand : handles
+ReportLifeChangeCommandHandler --> LifeChange : creates
+ReportLifeChangeCommandHandler "1" --> "4" ILifeChangeProcessor : selects by Kind
+ReportLifeChangeCommandHandler ..> LifeChangeResultDto : returns
+ILifeChangeProcessor <|.. AddressChangeProcessor
+ILifeChangeProcessor <|.. IncomeChangeProcessor
+ILifeChangeProcessor <|.. NewChildChangeProcessor
+ILifeChangeProcessor <|.. CustodyChangeProcessor
+AddressChangeProcessor ..> IntakeField : updates parent-address
+AddressChangeProcessor ..> ProviderUpdate : queues
+IncomeChangeProcessor ..> EligibilityEvaluator
+IncomeChangeProcessor ..> PrefilledForm : creates SDE 0093
+CustodyChangeProcessor ..> ReviewItem : queues
+LifeChange --> LifeChangeKind
+LifeChange --> LifeChangeOutcome
+ProviderUpdate --> ProviderUpdateStatus
+ProviderUpdate "0..*" --> "1" LifeChange : from
+@enduml

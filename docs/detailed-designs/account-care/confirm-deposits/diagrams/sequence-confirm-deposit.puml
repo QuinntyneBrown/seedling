@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Confirm a reported deposit
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "DepositCheckJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ConfirmDepositCommandHandler" as handler
+  participant "ExpectedDeposit" as entity
+  participant "IAuditTrail" as audit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ProviderAccountFeed" as feed
+  database "Seedlings database" as db
+end box
+participant "RESP provider" as provider
+job -> feed : GetDepositReportsAsync(since last run)
+feed -> provider : Read deposit reports (channel <TO SUPPLY>)
+provider --> feed : Deposit reports
+feed --> job : ProviderDepositReport list
+loop each report
+  job -> handler : Send ConfirmDepositCommand
+  handler -> db : Load RespCase by AccountNumber and ExpectedDeposit by Kind
+  db --> handler : Case and open ExpectedDeposit
+  alt ProviderReference already recorded
+    handler --> job : AlreadyConfirmed (no change, idempotent)
+  else no matching ExpectedDeposit
+    handler -> audit : Append "Unmatched deposit report" (Actor System)
+    handler --> job : Unmatched (logged for operators)
+  else matching ExpectedDeposit
+    handler -> entity : ConfirmReceived(amount, depositedOn, reference) (L2-023 AC1)
+    entity --> handler : Amount and ReceivedAt set
+    handler -> audit : Append "Deposit received" with amount and date
+    handler -> db : Save changes in one unit of work
+    db --> handler : Commit result
+    handler --> job : Confirmed
+  end
+end
+@enduml

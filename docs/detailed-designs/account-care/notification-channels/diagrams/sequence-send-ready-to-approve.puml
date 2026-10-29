@@ -1,0 +1,64 @@
+@startuml
+title UML sequence behaviour — Notify when a case is Ready to approve
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "Case status handler (any feature)" as source
+  participant "CaseStatusChangedNotificationHandler" as onstatus
+  participant "NotificationDispatcher" as disp
+  participant "NotificationChannelPolicy" as policy
+  participant "NotificationTemplates" as tpl
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "SmsSender" as sms
+  participant "EmailSender" as mail
+  participant "WebPushSender" as webpush
+end box
+participant "SMS, email or Web Push service" as ext
+actor "Parent" as parent
+source -> db : Save case Status = ReadyToApprove
+db --> source : Commit result
+source -> onstatus : Publish CaseStatusChanged(To ReadyToApprove)
+onstatus -> disp : DispatchAsync(ApprovalNeeded, deep link /cases/{caseId})
+disp -> db : Load ParentAccount and active PushSubscriptions
+disp -> policy : Resolve(account, activePush)
+note right of policy
+  Push with no active subscription
+  (permission denied or expired) -> Email (L2-026 AC2)
+end note
+policy --> disp : Channel
+disp -> tpl : Render(kind, language, first name, deep link)
+tpl --> disp : Message (no SIN, no account number)
+disp -> db : Insert Notification(Status Pending, CreatedAt)
+alt Channel = Sms
+  disp -> sms : SendAsync(phone, message)
+  sms -> ext : Send SMS with deep link (L2-026 AC1, within 1 minute)
+else Channel = Email
+  disp -> mail : SendAsync(email, message)
+  mail -> ext : Send email with deep link
+else Channel = Push
+  disp -> webpush : SendAsync(subscriptions, message)
+  webpush -> ext : Web Push (VAPID)
+  opt endpoint returns 404 or 410
+    webpush --> disp : Gone
+    disp -> db : Revoke subscription
+    disp -> mail : SendAsync(email, message) (L2-026 AC2)
+  end
+end
+ext --> parent : Message with link to the case
+disp -> db : Notification Status Sent, SentAt; or Failed and Attempts + 1
+note over disp : PendingNotificationSender retries Pending and Failed rows; interval <TO SUPPLY>, total under 1 minute
+@enduml

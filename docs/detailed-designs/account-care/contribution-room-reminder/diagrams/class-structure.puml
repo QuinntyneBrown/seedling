@@ -1,0 +1,95 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Contribution room reminder
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +string? AccountNumber
+}
+
+class ContributionReminder {
+  +Guid Id
+  +Guid CaseId
+  +int Year
+  +decimal ContributedThisYear
+  +decimal RoomRemaining
+  +decimal MatchingGrant
+  +DateTimeOffset SentAt
+  +DateTimeOffset? OptedOutAt
+  +OptOut(now: DateTimeOffset): void
+}
+
+class CesgRoomCalculator {
+  +Calculate(child: Child, year: int, contributed: decimal): CesgRoom
+}
+
+class CesgRoom {
+  +decimal RoomRemaining
+  +decimal MatchingGrant
+}
+
+class CesgOptions {
+  +decimal MatchRate <TO SUPPLY>
+  +decimal AnnualGrantLimit <TO SUPPLY>
+  +string RoomCarryForwardRule <TO SUPPLY>
+}
+
+class ReminderSchedule {
+  +string AnnualSendDate <TO SUPPLY>
+  +IsDue(case: RespCase, year: int, today: DateOnly): bool
+}
+
+interface IProviderAccountFeed {
+  +GetContributionsAsync(accountNumber: string, year: int): Task<decimal>
+}
+
+class SendContributionRemindersCommand
+class SendContributionRemindersCommandHandler
+class OptOutOfContributionReminderCommand {
+  +Guid CaseId
+  +int Year
+}
+class OptOutOfContributionReminderCommandHandler
+class GetContributionReminderQuery {
+  +Guid CaseId
+}
+class ContributionReminderDto {
+  +int Year
+  +decimal RoomRemaining
+  +decimal MatchingGrant
+  +bool OptedOut
+}
+class ContributionReminderJob {
+  +ExecuteAsync(ct: CancellationToken): Task
+}
+interface INotificationDispatcher {
+  +DispatchAsync(request: NotificationRequest): Task
+}
+
+RespCase "1" *-- "0..*" ContributionReminder : one per Year
+CesgRoomCalculator ..> CesgOptions
+CesgRoomCalculator ..> CesgRoom : returns
+ContributionReminderJob ..> SendContributionRemindersCommand : sends
+SendContributionRemindersCommandHandler ..> SendContributionRemindersCommand : handles
+SendContributionRemindersCommandHandler ..> ReminderSchedule
+SendContributionRemindersCommandHandler ..> IProviderAccountFeed
+SendContributionRemindersCommandHandler ..> CesgRoomCalculator
+SendContributionRemindersCommandHandler --> ContributionReminder : creates
+SendContributionRemindersCommandHandler ..> INotificationDispatcher
+OptOutOfContributionReminderCommandHandler ..> OptOutOfContributionReminderCommand : handles
+OptOutOfContributionReminderCommandHandler --> ContributionReminder : opts out
+GetContributionReminderQuery ..> ContributionReminderDto : returns
+@enduml

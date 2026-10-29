@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Contribution room reminder
+
+Container(pwa, "Seedlings PWA", "Angular 21", "CasePage grant room row and Not this year action")
+System_Ext(provider, "RESP provider", "Reports contributions")
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "ContributionReminderJob", "BackgroundService, RunOnceThenExit", "Daily: sends due yearly reminders")
+}
+Container_Boundary(api, "Seedlings API (application layer shared with the Worker)") {
+  Component(ctrl, "ContributionRemindersController", "ASP.NET Core controller", "GET current, POST opt-out")
+  Component(send, "SendContributionRemindersCommandHandler", "MediatR handler", "One reminder per case per calendar year")
+  Component(optout, "OptOutOfContributionReminderCommandHandler", "MediatR handler", "Records Not this year")
+  Component(get, "GetContributionReminderQueryHandler", "MediatR handler", "Returns this year's reminder for a case")
+  Component(calc, "CesgRoomCalculator", "Domain service", "Room remaining and matching grant; figures <TO SUPPLY>")
+  Component(feed, "IProviderAccountFeed", "Application port", "Contributions this year per account")
+  Component(dispatch, "INotificationDispatcher", "Application port", "Sends on the parent's chosen channel")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ContributionReminder, AuditEntry")
+}
+Rel(job, send, "Sends SendContributionRemindersCommand")
+Rel(send, feed, "Reads contributions")
+Rel(feed, provider, "Reads", "<TO SUPPLY>")
+Rel(send, calc, "Computes room and grant")
+Rel(send, dispatch, "Sends reminder")
+Rel(send, db, "Writes", "EF Core")
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, get, "Sends GetContributionReminderQuery")
+Rel(ctrl, optout, "Sends OptOutOfContributionReminderCommand")
+Rel(get, db, "Reads", "EF Core")
+Rel(optout, db, "Writes", "EF Core")
+@enduml
