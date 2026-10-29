@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Add a child
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Adds a child: name, date of birth, relationship", "HTTPS")
+Rel(seedlings, appinsights, "Writes redacted telemetry")
+@enduml

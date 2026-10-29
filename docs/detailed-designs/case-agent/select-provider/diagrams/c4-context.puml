@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Select a provider
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Hosts the Claude model the case agent calls")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+
+Rel(parent, seedlings, "Views and accepts the recommended provider", "HTTPS")
+Rel(seedlings, foundry, "Asks for the reason wording (no personal data)", "HTTPS, managed identity")
+Rel(parent, provider, "Reads the fee page linked from the recommendation", "HTTPS")
+Rel(reviewer, seedlings, "Resolves cases with no matching provider", "HTTPS")
+@enduml

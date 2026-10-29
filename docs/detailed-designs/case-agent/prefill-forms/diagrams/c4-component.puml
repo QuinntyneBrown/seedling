@@ -1,0 +1,33 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Pre-fill the forms
+
+Container(pwa, "Seedlings PWA", "Angular 21", "FormReviewPage and EditFormFieldDialog via CASE_FORMS_SERVICE")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "CaseFormsController", "ASP.NET Core controller", "POST forms, PUT field")
+  Component(prefill, "PrefillFormsCommandHandler", "MediatR handler", "Builds or completes both forms")
+  Component(edit, "EditPrefilledFieldCommandHandler", "MediatR handler", "Stores a parent edit")
+  Component(validator, "EditPrefilledFieldCommandValidator", "FluentValidation", "Applies the catalog rule (L2-046)")
+  Component(catalog, "FormFieldCatalog", "Application service", "Fields per form kind")
+  Component(mapper, "FormPrefillService", "Domain service", "Deterministic intake-to-field mapping")
+  Component(vaultPort, "ISensitiveDataVault", "Port", "SIN references and masked reads")
+  Component(audit, "IAuditTrail", "Application service", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "IntakeField, PrefilledForm, AuditEntry")
+}
+ContainerDb(vault, "Sensitive data vault", "Azure SQL + Blob Storage", "SINs, access log")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, prefill, "Sends PrefillFormsCommand")
+Rel(ctrl, edit, "Sends EditPrefilledFieldCommand")
+Rel(validator, catalog, "Reads rules")
+Rel(prefill, catalog, "Reads field definitions")
+Rel(prefill, mapper, "Maps intake to fields")
+Rel(prefill, vaultPort, "Reads masked SIN digits")
+Rel(edit, vaultPort, "Writes edited SIN")
+Rel(prefill, audit, "Appends FormsPrefilled")
+Rel(edit, audit, "Appends FormFieldEdited")
+Rel(prefill, db, "Reads and writes", "EF Core")
+Rel(edit, db, "Writes", "EF Core")
+Rel(vaultPort, vault, "Reads and writes, access-logged")
+@enduml

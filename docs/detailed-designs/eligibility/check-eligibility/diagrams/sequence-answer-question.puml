@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Answer an eligibility question
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardEligibilityPage" as page
+  participant "HttpEligibilityService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "EligibilityController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveEligibilityAnswerCommandHandler" as handler
+  participant "EligibilityAnswers" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+actor -> page : Open /wizard/eligibility/incomeBand
+page -> client : getAnswers()
+client -> controller : GET /api/eligibility/answers (bearer)
+controller --> client : 200 answers so far
+client --> page : Restore chosen option, if any
+actor -> page : Pick an income band, tap Next question
+page -> client : saveAnswer("incomeBand", value)
+client -> controller : PUT /api/eligibility/answers/incomeBand
+controller -> handler : Send SaveEligibilityAnswerCommand
+handler -> db : Load EligibilityAnswers for parent (tenant filter)
+db --> handler : Answers or none
+handler -> entity : Set("incomeBand", value)
+alt Value outside the question's allowed set
+  entity --> handler : Invalid
+  handler --> controller : ValidationException
+  controller --> client : 400 ValidationProblemDetails
+  page --> actor : Plain-language error on the question
+else Valid
+  handler -> db : Upsert EligibilityAnswers
+  db --> handler : Saved
+  controller --> client : 204
+  page --> actor : Next of at most 6 questions (L2-011)
+end
+@enduml

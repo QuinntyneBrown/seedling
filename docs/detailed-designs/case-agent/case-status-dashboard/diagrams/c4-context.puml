@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Case status dashboard
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Reads status, explanation and next action per case", "HTTPS")
+Rel(seedlings, provider, "Tracks applications and deposits (other features)")
+Rel(provider, esdc, "Requests the bond and grant (other features)")
+@enduml

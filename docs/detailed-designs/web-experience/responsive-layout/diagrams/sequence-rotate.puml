@@ -1,0 +1,35 @@
+@startuml
+title UML sequence behaviour — Rotate with input in progress
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser layout engine" as browser
+  participant "Intake step page" as page
+  participant "sl-text-field (input element)" as field
+  participant "App (app-root)" as shell
+end box
+actor -> field : Type a value; focus stays in the field
+actor -> browser : Rotate portrait to landscape
+browser -> browser : Viewport 390 x 844 becomes 844 x 390
+browser -> shell : Re-evaluate media queries only
+shell -> shell : CSS switches bottom nav to top bar; no component created or destroyed
+browser -> page : Reflow .flow layout
+page -> field : Same element instance, same value, same focus
+field --> actor : Input intact after reflow (L2-004 criterion 5)
+actor -> browser : Rotate back to portrait
+browser -> page : Reflow again
+page --> actor : Value and focus still intact
+@enduml

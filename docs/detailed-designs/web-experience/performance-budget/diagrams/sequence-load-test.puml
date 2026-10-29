@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Run the load test
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Scheduler or release pipeline" as actor
+box "Test harness — load test (tool <TO SUPPLY>)" #F2F4F7
+  participant "Load-test runner" as runner
+  participant "50 virtual parents" as vus
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Seedlings API (target environment <TO SUPPLY>)" as api
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "seedling CLI" as cli
+  database "Seedlings database" as db
+end box
+actor -> cli : seedling seed with the load option (50 parents, 1 case each)
+cli -> db : Idempotent seed
+actor -> runner : Start
+runner -> vus : Sign in each virtual parent as a distinct seeded account
+vus -> api : Sign-in requests
+api --> vus : Sessions
+par Scenario 1 for 5 minutes
+  loop Repeatedly
+    vus -> api : GET case list
+    api --> vus : 200 and duration
+  end
+else Scenario 2
+  loop Repeatedly (load level <TO SUPPLY>)
+    vus -> api : Save intake field
+    api --> vus : 2xx and duration
+  end
+end
+runner -> runner : Compute p95 per scenario
+alt Case list p95 < 500 ms and intake save p95 < 300 ms
+  runner --> actor : Pass (L2-048 criteria 1 and 2)
+else Either threshold reached
+  runner --> actor : Fail with p95, p99 and error rate
+end
+@enduml

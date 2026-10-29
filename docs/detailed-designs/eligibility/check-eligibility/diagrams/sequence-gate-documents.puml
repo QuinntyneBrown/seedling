@@ -1,0 +1,63 @@
+@startuml
+title UML sequence behaviour — Gate documents and SIN on the eligibility result
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Router" as router
+  participant "eligibilityShownGuard" as guard
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Intake controller" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "EligibilityGateBehavior" as gate
+  participant "StoreSinCommandHandler or UploadIdentityDocumentCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  database "Sensitive data vault" as vault
+end box
+
+== Route guard ==
+actor -> router : Open /cases/{caseId}/intake/document-capture
+router -> guard : canActivate
+guard -> client : getCase(caseId)
+client --> guard : Case with eligibilityShownAt
+alt eligibilityShownAt is null (L2-012 #1)
+  guard --> router : Redirect to /wizard/eligibility
+  router --> actor : Eligibility check
+else Result shown
+  guard --> router : Allow
+  router --> actor : Document step
+end
+
+== API gate ==
+client -> controller : POST SIN or document for caseId (bearer)
+controller -> gate : Send command implementing IRequiresEligibilityShown
+gate -> db : Read EligibilityResult.ShownAt for caseId (tenant filter)
+db --> gate : ShownAt or none
+alt Not shown (L2-012 #2)
+  gate --> controller : ConflictException eligibility_not_shown
+  controller --> client : 409 ProblemDetails, nothing stored
+else Shown
+  gate -> handler : next()
+  handler -> vault : Store encrypted item
+  vault --> handler : Stored
+  handler --> controller : Result
+  controller --> client : 2xx
+end
+@enduml

@@ -1,0 +1,53 @@
+@startuml
+title UML sequence behaviour — Prepare and deliver the export
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "PrivacyPage" as page
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DataRequestsController" as ctrl
+end box
+box "Backend — Seedlings Worker" #D1FADF
+  participant "DataRequestJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ProcessDataRequestsCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "PersonalDataExporter" as exporter
+  participant "SensitiveDataVault" as vault
+  participant "NotificationDispatcher" as notify
+  database "Seedlings database" as db
+  database "Sensitive data vault" as vdb
+end box
+job -> handler : Send ProcessDataRequestsCommand on schedule
+handler -> db : Select Pending Export requests
+handler -> exporter : ExportAsync(parentAccountId)
+exporter -> db : Read account, children, cases, intake, consents, approvals, payments, audit
+exporter -> vault : Read SINs and documents with VaultAccess(System, ExportData)
+vault -> vdb : Log each read
+exporter -> vdb : Write encrypted archive (seedlings-export.json + documents)
+exporter --> handler : ExportArchive
+handler -> db : Status Ready, DownloadExpiresAt
+handler -> notify : Send download link to the parent (L2-034 AC1, within 24 h)
+actor -> page : Open the link
+page -> ctrl : GET /api/me/data-requests/{id}/download
+ctrl -> ctrl : Owner check; 404 for another parent
+ctrl -> vdb : Read and decrypt archive
+ctrl --> page : 200 application/zip, Cache-Control: no-store
+page --> actor : File saved
+@enduml

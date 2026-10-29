@@ -1,0 +1,101 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Document retention
+
+enum DocumentRetention {
+  DeleteAfter30Days
+  DeleteWhenAccountOpens
+  Keep
+}
+
+enum RetentionOutcome {
+  Delete
+  Retain
+  NotDue
+}
+
+class ParentAccount {
+  +Guid Id
+  +DocumentRetention DocumentRetention
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +DateTimeOffset? AccountOpenedAt
+  +DateTimeOffset? DocumentsDueAt
+  +DateTimeOffset? DocumentsResolvedAt
+  +MarkAccountOpen(at: DateTimeOffset, retention: DocumentRetention): void
+  +ResolveDocuments(at: DateTimeOffset): void
+}
+
+class DocumentRetentionPolicy {
+  +RetentionPeriod: TimeSpan = 30 days
+  +DueAt(openedAt, retention): DateTimeOffset
+  +Decide(case: RespCase, retention: DocumentRetention, now): RetentionOutcome
+}
+
+class SetDocumentRetentionCommand {
+  +DocumentRetention Retention
+}
+
+class SetDocumentRetentionCommandHandler {
+  -IAppDbContext _db
+  -ICurrentUser _user
+  -IAuditTrail _audit
+}
+
+class ApplyDocumentRetentionCommand {
+  +DateTimeOffset? AsOf
+}
+
+class ApplyDocumentRetentionCommandHandler {
+  -IAppDbContext _db
+  -ISensitiveDataVault _vault
+  -IAuditTrail _audit
+  -INotificationDispatcher _notifications
+  -IDateTimeProvider _clock
+}
+
+class DocumentRetentionJob <<hosted service>> {
+  +ExecuteAsync(ct): Task
+}
+
+interface ISensitiveDataVault {
+  +DeleteCaseDocumentsAsync(caseId: Guid, access: VaultAccess): Task<int>
+}
+
+interface IAuditTrail {
+  +AppendAsync(entry: AuditEntry): Task
+}
+
+interface INotificationDispatcher {
+  +SendAsync(parentAccountId: Guid, kind: string, deepLink: string): Task
+}
+
+ParentAccount --> DocumentRetention : has
+RespCase --> ParentAccount : owned by
+SetDocumentRetentionCommandHandler ..> SetDocumentRetentionCommand : handles
+SetDocumentRetentionCommandHandler --> ParentAccount : updates
+SetDocumentRetentionCommandHandler --> IAuditTrail
+DocumentRetentionJob ..> ApplyDocumentRetentionCommand : sends
+ApplyDocumentRetentionCommandHandler ..> ApplyDocumentRetentionCommand : handles
+ApplyDocumentRetentionCommandHandler --> DocumentRetentionPolicy : asks
+ApplyDocumentRetentionCommandHandler --> RespCase : resolves
+ApplyDocumentRetentionCommandHandler --> ISensitiveDataVault
+ApplyDocumentRetentionCommandHandler --> IAuditTrail
+ApplyDocumentRetentionCommandHandler --> INotificationDispatcher
+DocumentRetentionPolicy ..> RetentionOutcome : returns
+@enduml

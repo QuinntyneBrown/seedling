@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — Redirect HTTP and return HSTS
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser" as browser
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "App Service front end" as front
+  participant "HSTS middleware" as hsts
+  participant "ExceptionHandlingMiddleware" as exmw
+  participant "CasesController" as ctrl
+end box
+actor -> browser : Open http://<api host>/api/cases
+browser -> front : GET over plain HTTP
+front --> browser : 301 to https:// (httpsOnly, L2-031 AC1)
+browser -> front : GET over HTTPS (TLS 1.2+)
+front -> hsts : Forward decrypted request
+hsts -> hsts : Add Strict-Transport-Security (L2-031 AC2)
+hsts -> exmw : Next
+exmw -> ctrl : Next
+alt Request succeeds
+  ctrl --> exmw : 200 JSON
+else Handler throws
+  exmw -> exmw : Map exception to ProblemDetails
+end
+exmw --> hsts : Response (HSTS header kept)
+hsts --> front : Response
+front --> browser : HTTPS response with HSTS
+browser -> browser : Remember HSTS for max-age
+browser --> client : Result
+client --> actor : Screen renders
+@enduml

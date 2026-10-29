@@ -1,0 +1,110 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Data export and deletion
+
+enum DataRequestKind {
+  Export
+  Delete
+}
+
+enum DataRequestStatus {
+  Pending
+  Ready
+  Completed
+  Failed
+}
+
+class DataRequest {
+  +Guid Id
+  +Guid ParentAccountId
+  +DataRequestKind Kind
+  +DataRequestStatus Status
+  +DateTimeOffset RequestedAt
+  +DateTimeOffset DueAt
+  +DateTimeOffset? CompletedAt
+  +string? ArchiveBlobName
+  +DateTimeOffset? DownloadExpiresAt
+  +string? ConfirmationDestination
+}
+
+class ParentAccount {
+  +Guid Id
+  +DateTimeOffset? DeletionRequestedAt
+}
+
+class RequestDataExportCommand
+class RequestDataExportCommandHandler {
+  -IAppDbContext _db
+  -ICurrentUser _user
+  -IDateTimeProvider _clock
+}
+
+class RequestAccountDeletionCommand {
+  +bool Confirmed
+}
+class RequestAccountDeletionCommandHandler {
+  -IAppDbContext _db
+  -ICurrentUser _user
+  -ISessionRevoker _sessions
+}
+
+class DownloadDataExportQuery {
+  +Guid DataRequestId
+}
+
+class ProcessDataRequestsCommand
+class ProcessDataRequestsCommandHandler {
+  -IPersonalDataExporter _exporter
+  -IAccountPurger _purger
+  -INotificationDispatcher _notifications
+}
+
+interface IPersonalDataExporter {
+  +ExportAsync(parentAccountId: Guid): Task<ExportArchive>
+}
+
+interface IAccountPurger {
+  +PurgeAsync(parentAccountId: Guid): Task<PurgeReport>
+}
+
+class PersonalDataExport <<JSON document>> {
+  +string SchemaVersion
+  +DateTimeOffset GeneratedAt
+  +AccountSection Account
+  +ChildSection[] Children
+  +CaseSection[] Cases
+  +AuditEntryDto[] Activity
+  +ConsentRecordDto[] Consents
+  +PaymentDto[] Payments
+}
+
+class ExportArchive {
+  +string BlobName
+  +long Length
+}
+
+DataRequest --> DataRequestKind
+DataRequest --> DataRequestStatus
+ParentAccount "1" --> "*" DataRequest
+RequestDataExportCommandHandler ..> RequestDataExportCommand : handles
+RequestDataExportCommandHandler --> DataRequest : creates or returns open
+RequestAccountDeletionCommandHandler ..> RequestAccountDeletionCommand : handles
+RequestAccountDeletionCommandHandler --> DataRequest : creates
+RequestAccountDeletionCommandHandler --> ParentAccount : marks
+ProcessDataRequestsCommandHandler ..> ProcessDataRequestsCommand : handles
+ProcessDataRequestsCommandHandler --> IPersonalDataExporter
+ProcessDataRequestsCommandHandler --> IAccountPurger
+IPersonalDataExporter ..> PersonalDataExport : serializes
+IPersonalDataExporter ..> ExportArchive : returns
+@enduml

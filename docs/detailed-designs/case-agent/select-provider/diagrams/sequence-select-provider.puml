@@ -1,0 +1,77 @@
+@startuml
+title UML sequence behaviour — Select a provider
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ProviderPage" as page
+  participant "HttpCaseAgentService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ProviderSelectionController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SelectProviderCommandHandler" as handler
+  participant "ProviderRulesEngine" as rules
+  participant "ProviderReasonPolicy" as policy
+  participant "EnqueueForReviewCommandHandler" as review
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "FoundryCaseAgent" as agent
+  database "Seedlings database" as db
+end box
+participant "Microsoft Foundry (Claude)" as foundry
+actor -> page : Open Your RESP provider
+page -> client : selectProvider(caseId)
+client -> controller : POST /api/cases/{caseId}/provider-selection
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send SelectProviderCommand
+handler -> db : Load RespCase for current parent (L2-045)
+db --> handler : Case, intake state, recommendation
+alt case belongs to another parent
+  handler --> controller : NotFoundException
+  controller --> client : 404 ProblemDetails
+else intake not complete
+  handler --> controller : ConflictException intake_incomplete
+  controller --> client : 409 ProblemDetails
+else recommendation already exists
+  handler --> controller : Existing ProviderRecommendationDto
+  controller --> client : 200
+else first run
+  handler -> db : Load active Provider entries
+  db --> handler : Rules base
+  handler -> rules : Match(providers, province) per L2-017
+  alt exactly one provider selected
+    rules --> handler : ProviderMatch
+    handler -> agent : WriteProviderReasonAsync(facts, province only)
+    agent -> foundry : Messages request
+    foundry --> agent : Reason text
+    agent --> handler : Candidate reason
+    handler -> policy : Accept(candidate, match), at most 2 sentences
+    policy --> handler : Checked reason or fixed fallback
+    handler -> db : Save ProviderRecommendation and AuditEntry ProviderRecommended
+    db --> handler : Commit
+    handler --> controller : Recommended DTO with fee page URL
+  else no provider matches
+    rules --> handler : none
+    handler -> review : Send EnqueueForReviewCommand(NoMatchingProvider, provider-selection) per L2-017
+    review --> handler : ReviewItem queued
+    handler --> controller : RoutedToReview DTO
+  end
+  controller --> client : 200 ProviderRecommendationDto
+end
+client --> page : Recommendation or ProblemDetails
+page --> actor : One provider, reason, fee page link; or human review state
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Load the dashboard
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "DashboardPage" as page
+  participant "HttpCasesService" as client
+  database "Device store (IndexedDB)" as idb
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ListCasesQueryHandler" as handler
+  participant "CaseStatusPresenter" as presenter
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Open Home
+page -> client : listCases()
+alt online
+  client -> controller : GET /api/cases
+  controller -> controller : Authenticate (fallback policy)
+  controller -> handler : Send ListCasesQuery
+  handler -> db : Load cases for current parent with review, attention, submission, deposits
+  db --> handler : Projections
+  loop each case
+    handler -> presenter : Present(context, language) per L2-021
+    presenter --> handler : Label, one-sentence explanation, next action
+  end
+  handler --> controller : CaseSummaryDto[]
+  controller --> client : 200
+  client --> page : Summaries
+  page -> idb : Save last known status
+  alt no cases
+    page --> actor : Add your first child (empty state)
+  else cases
+    page --> actor : One card per child: status, explanation, next action; Submitted says Nothing to do (L2-021)
+  end
+else offline
+  client --> page : Network error
+  page -> idb : Read last known status
+  idb --> page : Cached summaries
+  page --> actor : Offline banner with last known status (L2-003)
+end
+@enduml

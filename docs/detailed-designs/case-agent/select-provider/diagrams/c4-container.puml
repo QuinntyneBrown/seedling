@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Select a provider
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, rules base, audit trail")
+}
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Hosts the Claude model the case agent calls")
+
+Rel(parent, pwa, "Opens Your RESP provider", "HTTPS")
+Rel(pwa, api, "POST provider-selection, PUT provider", "JSON/HTTPS")
+Rel(api, db, "Reads rules base and case, writes recommendation and audit", "EF Core")
+Rel(api, foundry, "Requests reason text", "HTTPS, managed identity")
+@enduml

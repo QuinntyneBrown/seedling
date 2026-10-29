@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Wizard roadmap
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Sees steps done, current and upcoming, time spent and left", "HTTPS")
+Rel(seedlings, appinsights, "Sends request telemetry", "HTTPS")
+@enduml

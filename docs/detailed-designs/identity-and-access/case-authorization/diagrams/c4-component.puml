@@ -1,0 +1,36 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Case authorization
+
+Container(pwa, "Seedlings PWA", "Angular 21", "authInterceptor, require-auth.guard.ts")
+Container(admin, "Admin app", "Angular", "require-admin.guard.ts")
+Container_Boundary(api, "Seedlings API") {
+  Component(bearer, "JWT bearer handler", "ASP.NET Core authentication", "Validates token, OnChallenge writes 401 ProblemDetails")
+  Component(policy, "Fallback policy and Reviewer policy", "ASP.NET Core authorization", "Authenticated by default; [AllowAnonymous] on auth endpoints and webhook")
+  Component(ctrls, "Feature controllers", "ASP.NET Core controllers", "Cases, children, documents")
+  Component(review, "ReviewQueueController", "ASP.NET Core controller", "Reviewer policy")
+  Component(current, "HttpCurrentUser", "ICurrentUser", "ParentAccountId or ReviewerId from claims")
+  Component(handlers, "Feature handlers", "MediatR handlers", "Load by id, throw NotFoundException when invisible")
+  Component(reviewh, "GetReviewCaseQueryHandler", "MediatR handler", "IgnoreQueryFilters only with an open ReviewItem")
+  Component(ctx, "AppDbContext", "EF Core", "Global query filter per ITenantOwned entity")
+  Component(vaultport, "ISensitiveDataVault adapter", "Infrastructure", "Ownership check and VaultAccessLogEntry per read")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Tenant-owned rows")
+  ComponentDb(vault, "Sensitive data vault", "Azure SQL + Blob Storage", "SINs, documents, access log")
+}
+
+Rel(pwa, bearer, "Bearer requests", "JSON/HTTPS")
+Rel(admin, bearer, "Reviewer requests", "JSON/HTTPS")
+Rel(bearer, policy, "Authenticated principal")
+Rel(policy, ctrls, "Admits parent")
+Rel(policy, review, "Admits reviewer")
+Rel(ctrls, handlers, "Sends commands and queries")
+Rel(review, reviewh, "Sends GetReviewCaseQuery")
+Rel(handlers, ctx, "Queries")
+Rel(reviewh, ctx, "Queries without filter")
+Rel(ctx, current, "Reads ParentAccountId")
+Rel(handlers, vaultport, "Reads with VaultAccessContext")
+Rel(reviewh, vaultport, "Reads with reviewer and purpose")
+Rel(ctx, db, "SQL", "EF Core")
+Rel(vaultport, vault, "Logged reads")
+@enduml

@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Transport and storage encryption
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Container(frontdoor, "App Service front end", "Azure App Service, httpsOnly, minTlsVersion 1.2", "Terminates TLS, refuses TLS 1.0/1.1, redirects HTTP to HTTPS")
+Container_Boundary(api, "Seedlings API") {
+  Component(reqlog, "Serilog request logging", "UseSerilogRequestLogging", "Logs method, path, status")
+  Component(hsts, "HSTS middleware", "UseHsts", "Adds Strict-Transport-Security to every response")
+  Component(exmw, "ExceptionHandlingMiddleware", "ASP.NET Core middleware", "Maps exceptions to ProblemDetails")
+  Component(redirect, "HTTPS redirection", "UseHttpsRedirection", "Redirects any plain HTTP request that reaches Kestrel")
+  Component(ctx, "AppDbContext", "EF Core", "Opens SQL connections with Encrypt=True")
+  Component(vaultsvc, "SensitiveDataVault", "Infrastructure service", "Encrypts SINs and documents before storage")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "TDE, service-managed keys")
+ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "Application-level ciphertext")
+
+Rel(parent, frontdoor, "Sends requests", "HTTPS")
+Rel(frontdoor, reqlog, "Forwards decrypted request")
+Rel(reqlog, hsts, "Next")
+Rel(hsts, exmw, "Next")
+Rel(exmw, redirect, "Next")
+Rel(redirect, ctx, "Handlers read and write through")
+Rel(redirect, vaultsvc, "Handlers store sensitive data through")
+Rel(ctx, db, "Reads and writes", "TLS 1.2+")
+Rel(vaultsvc, vault, "Writes ciphertext", "TLS 1.2+")
+@enduml

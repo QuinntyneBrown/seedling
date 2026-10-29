@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Case status dashboard
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, review items, audit trail")
+}
+
+Rel(parent, pwa, "Opens Home and a case", "HTTPS")
+Rel(pwa, api, "GET /api/cases, GET /api/cases/{caseId}", "JSON/HTTPS")
+Rel(pwa, idb, "Writes and reads last known status")
+Rel(api, db, "Reads cases scoped to the parent", "EF Core")
+@enduml

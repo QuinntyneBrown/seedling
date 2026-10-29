@@ -1,0 +1,112 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Sessions and devices
+
+class ParentAccount {
+  +Guid Id
+  +int SessionVersion
+  +EndAllSessions(): void
+}
+
+class RefreshToken {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid FamilyId
+  +string TokenHash
+  +DateTimeOffset CreatedAt
+  +DateTimeOffset ExpiresAt
+  +DateTimeOffset? ConsumedAt
+  +DateTimeOffset? RevokedAt
+  +Guid? ReplacedById
+  +IsUsable(now: DateTimeOffset): bool
+  +Consume(now: DateTimeOffset, next: RefreshToken): void
+  +Revoke(now: DateTimeOffset): void
+}
+
+class SessionTokens {
+  +string AccessToken
+  +DateTimeOffset AccessTokenExpiresAt
+  +string RefreshToken
+  +DateTimeOffset RefreshTokenExpiresAt
+}
+
+interface ISessionIssuer {
+  +IssueAsync(account: ParentAccount): Task<SessionTokens>
+  +RotateAsync(account: ParentAccount, current: RefreshToken): Task<SessionTokens>
+}
+
+class JwtSessionIssuer {
+  -JwtOptions options
+  -IDateTimeProvider clock
+}
+
+class JwtOptions {
+  +string Issuer
+  +string Audience
+  +string SigningKey
+  +int AccessTokenMinutes = 15
+  +int RefreshTokenDays
+}
+
+class RefreshSessionCommandHandler {
+  +Handle(command: RefreshSessionCommand): Task<SessionTokens>
+}
+
+class SignOutAllDevicesCommandHandler {
+  +Handle(command: SignOutAllDevicesCommand): Task<SessionTokens>
+}
+
+class GetResumePointQueryHandler {
+  +Handle(query: GetResumePointQuery): Task<ResumePointDto>
+}
+
+class ResumePointDto {
+  +ResumeDestination Destination
+  +Guid? CaseId
+  +string? StepKey
+}
+
+enum ResumeDestination {
+  Wizard
+  Intake
+  Dashboard
+}
+
+class SessionVersionValidator {
+  +ValidateAsync(context: TokenValidatedContext): Task
+}
+
+class UnauthorizedException {
+  +string Code
+}
+
+interface ICurrentUser {
+  +Guid ParentAccountId
+}
+
+ParentAccount "1" *-- "*" RefreshToken : owns
+JwtSessionIssuer ..|> ISessionIssuer
+JwtSessionIssuer --> JwtOptions : reads
+ISessionIssuer ..> SessionTokens : returns
+RefreshSessionCommandHandler --> RefreshToken : consumes / revokes family
+RefreshSessionCommandHandler --> ISessionIssuer : rotates via
+RefreshSessionCommandHandler ..> UnauthorizedException : throws
+SignOutAllDevicesCommandHandler --> ParentAccount : bumps SessionVersion
+SignOutAllDevicesCommandHandler --> ISessionIssuer : issues via
+SignOutAllDevicesCommandHandler ..> ICurrentUser : reads
+GetResumePointQueryHandler ..> ResumePointDto : returns
+GetResumePointQueryHandler ..> ICurrentUser : reads
+ResumePointDto --> ResumeDestination : has
+SessionVersionValidator ..> ParentAccount : compares sv claim
+@enduml

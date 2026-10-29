@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Installable PWA
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(browser, "Browser and operating system", "Chrome, Edge, Safari on Android, iOS, Windows, macOS; install and service worker host")
+
+Rel(parent, browser, "Opens, installs and launches Seedlings with")
+Rel(browser, seedlings, "Downloads manifest, service worker and app shell from", "HTTPS")
+@enduml

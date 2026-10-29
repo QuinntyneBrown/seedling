@@ -1,0 +1,54 @@
+@startuml
+title UML sequence behaviour — Queue a case for review
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+end box
+box "Backend — Seedlings Worker" #D1FADF
+  participant "TrackSubmissionsJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "CheckPendingSubmissionsCommandHandler" as check
+  participant "EnqueueForReviewCommandHandler" as enqueue
+  participant "RespCase" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IProviderGateway" as gateway
+  participant "INotificationDispatcher" as notify
+  database "Seedlings database" as db
+end box
+job -> check : Send CheckPendingSubmissionsCommand
+check -> gateway : GetApplicationStatusAsync(reference)
+gateway --> check : Rejected(reason, itemKey)
+check -> enqueue : Send EnqueueForReviewCommand(ProviderRejected, submission)
+enqueue -> db : Find open item for case, reason, step
+db --> enqueue : Open item or none
+alt open item already exists
+  enqueue --> check : Existing item id
+else new item
+  enqueue -> entity : HoldForReview(submission) per L2-022
+  entity --> enqueue : Status NeedsAttention
+  enqueue -> db : Save ReviewItem(BlocksCase), case, AuditEntry QueuedForReview
+  db --> enqueue : Commit
+  enqueue -> notify : A person is checking this (deep link to case)
+  notify --> enqueue : Sent on parent's channel
+  enqueue --> check : Item id
+end
+check --> job : Done
+actor -> page : Open the case
+page --> actor : A person is checking this, expected response time <TO SUPPLY> (L2-022)
+@enduml

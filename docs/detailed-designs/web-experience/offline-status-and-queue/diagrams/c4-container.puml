@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Offline status and queue
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container_Boundary(pwab, "Seedlings PWA") {
+    Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+    ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  }
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+Rel(parent, pwa, "Uses", "HTTPS or offline")
+Rel(pwa, idb, "Reads snapshots; writes and drains the outbox", "IndexedDB API")
+Rel(pwa, api, "Lists cases; replays queued saves and uploads with Idempotency-Key", "JSON/HTTPS")
+Rel(api, db, "Reads and writes", "EF Core")
+@enduml

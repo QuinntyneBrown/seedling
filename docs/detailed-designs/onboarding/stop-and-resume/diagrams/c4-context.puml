@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Stop and resume the wizard
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Stops, then resumes on any device", "HTTPS")
+Rel(seedlings, push, "Sends one wizard reminder when Push is chosen", "Web Push")
+Rel(seedlings, sms, "Sends one wizard reminder when Sms is chosen", "HTTPS")
+Rel(seedlings, email, "Sends one wizard reminder when Email is chosen", "HTTPS")
+Rel(push, parent, "Delivers reminder")
+Rel(seedlings, appinsights, "Sends telemetry", "HTTPS")
+@enduml

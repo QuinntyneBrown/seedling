@@ -1,0 +1,61 @@
+@startuml
+title UML sequence behaviour — Answer a wizard question
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardNamePage" as page
+  participant "sl-wizard-step" as step
+  participant "WizardStore" as store
+  participant "HttpWizardService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "AnswerWizardStepCommandHandler" as handler
+  participant "NameStep" as namestep
+  participant "WizardProgress" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> step : Enter first and last name, tap Continue
+step -> page : primary event
+page -> page : Check required fields
+alt A required field is empty
+  page --> actor : aria-invalid, plain-language message, focus on the field; step does not advance
+else Answer complete
+  page -> store : answer("name", { firstName, lastName })
+  store -> client : answer()
+  client -> controller : PUT /api/wizard/steps/name
+  controller -> controller : Authenticate (fallback policy)
+  controller -> handler : Send AnswerWizardStepCommand (validated by ValidationBehavior)
+  handler -> db : Load WizardProgress and WizardContext for current parent
+  db --> handler : Progress, context
+  handler -> handler : Build plan; reject a step after the current one (409 step_not_reached)
+  handler -> namestep : ApplyAsync(context, answer)
+  namestep -> db : Set ParentAccount FirstName, LastName, DisplayName
+  handler -> entity : CompleteStep("name", plan, now)
+  entity --> handler : CurrentStepKey = "children"
+  handler -> db : Save in one unit of work (RowVersion checked)
+  db --> handler : Committed
+  handler --> controller : WizardStateDto
+  controller --> client : 200 WizardStateDto
+  client --> store : WizardState
+  store -> page : Navigate to /wizard/children
+  page --> actor : L2-037 next screen: one prompt, one input, one primary, Back
+end
+@enduml

@@ -1,0 +1,79 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Performance budget
+
+package "Backend — Seedling.Application" {
+  interface "IPipelineBehavior<TRequest, TResponse>" as IPipelineBehavior <<MediatR>> {
+    +Handle(request, next, ct): Task<TResponse>
+  }
+  class "ValidationBehavior<TRequest, TResponse>" as ValidationBehavior <<existing>>
+  class "RequestTimingBehavior<TRequest, TResponse>" as RequestTimingBehavior {
+    -histogram: Histogram<double>
+    +Handle(request, next, ct): Task<TResponse>
+  }
+  class "Histogram<double>" as Histogram <<System.Diagnostics.Metrics>> {
+    +Record(value: double, tag: request.type)
+  }
+  class ListCasesQueryHandler <<case-status-dashboard>> {
+    +Handle(query: ListCasesQuery): Task<IReadOnlyList<CaseSummaryDto>>
+  }
+  class SaveIntakeFieldCommandHandler <<complete-intake-steps>> {
+    +Handle(command: SaveIntakeFieldCommand): Task
+  }
+  class RespCase {
+    +Guid Id
+    +Guid ParentAccountId
+    +Guid ChildId
+    +CaseStatus Status
+    +DateTimeOffset StatusChangedAt
+  }
+  class IntakeField {
+    +Guid CaseId
+    +string StepKey
+    +string FieldKey
+    +string Value
+    +DateTimeOffset SavedAt
+  }
+}
+
+package "Frontend — budget scripts" {
+  class BundleSizeCheck <<check-bundle-size.mjs>> {
+    +limitBytes: 300000
+    +initialFiles(indexHtml): string[]
+    +gzipSize(file): number
+    +run(): BudgetResult
+  }
+  class LighthouseBudget <<lighthouserc.cjs>> {
+    +url: dashboard
+    +numberOfRuns: 3
+    +interactiveMaxMs: 4000
+    +performanceMinScore: 0.8
+  }
+  class BudgetResult {
+    +total: number
+    +limit: number
+    +files: FileSize[]
+    +passed: boolean
+  }
+}
+
+IPipelineBehavior <|.. ValidationBehavior
+IPipelineBehavior <|.. RequestTimingBehavior
+RequestTimingBehavior --> Histogram : records
+RequestTimingBehavior ..> ListCasesQueryHandler : wraps
+RequestTimingBehavior ..> SaveIntakeFieldCommandHandler : wraps
+ListCasesQueryHandler ..> RespCase : projects
+SaveIntakeFieldCommandHandler ..> IntakeField : upserts
+BundleSizeCheck ..> BudgetResult : returns
+@enduml

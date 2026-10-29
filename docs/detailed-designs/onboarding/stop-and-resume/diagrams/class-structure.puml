@@ -1,0 +1,97 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Stop and resume the wizard
+
+class WizardProgress {
+  +Guid ParentAccountId
+  +string CurrentStepKey
+  +int ElapsedSeconds
+  +DateTimeOffset LastActiveAt
+  +DateTimeOffset? ReminderSentAt
+  +byte[] RowVersion
+  +void RecordReturn(now: DateTimeOffset)
+  +void MarkReminderSent(now: DateTimeOffset)
+  +void ClearReminder()
+  +bool IsReminderDue(now: DateTimeOffset, absence: TimeSpan)
+}
+
+class ResumeWizardCommandHandler {
+  +Handle(command: ResumeWizardCommand): Task<WizardStateDto>
+}
+
+class SendWizardRemindersCommandHandler {
+  +Handle(command: SendWizardRemindersCommand): Task<int>
+}
+
+class WizardReminderJob {
+  +ExecuteAsync(stoppingToken: CancellationToken): Task
+}
+
+class WizardController {
+  +Resume(): Task<WizardStateDto>
+}
+
+interface INotificationDispatcher {
+  +SendAsync(request: NotificationRequest): Task
+}
+
+class NotificationRequest <<record>> {
+  +Guid ParentAccountId
+  +NotificationKind Kind
+  +ContactChannel Channel
+  +Language Language
+  +string DeepLink
+  +string IdempotencyKey
+  +IReadOnlyDictionary<string, string> Arguments
+}
+
+enum ContactChannel {
+  Push
+  Sms
+  Email
+}
+
+class ParentAccount {
+  +Guid Id
+  +string? Email
+  +string? Phone
+  +ContactChannel ContactChannel
+  +Language Language
+}
+
+class WizardPlanner {
+  +WizardPlan Plan(context: WizardContext)
+}
+
+class WizardTimeEstimator {
+  +RoadmapTimeDto Estimate(plan: WizardPlan, progress: WizardProgress)
+}
+
+interface IDateTimeProvider {
+  +DateTimeOffset UtcNow
+}
+
+WizardController ..> ResumeWizardCommandHandler : sends command
+ResumeWizardCommandHandler --> WizardProgress : RecordReturn
+WizardReminderJob ..> SendWizardRemindersCommandHandler : sends command
+SendWizardRemindersCommandHandler --> "*" WizardProgress : claims due rows
+SendWizardRemindersCommandHandler ..> WizardPlanner : uses
+SendWizardRemindersCommandHandler ..> WizardTimeEstimator : uses
+SendWizardRemindersCommandHandler ..> INotificationDispatcher : dispatches
+SendWizardRemindersCommandHandler ..> ParentAccount : reads channel and language
+SendWizardRemindersCommandHandler ..> IDateTimeProvider : reads now
+INotificationDispatcher ..> NotificationRequest : takes
+NotificationRequest --> ContactChannel : via
+ParentAccount --> ContactChannel : chose
+@enduml

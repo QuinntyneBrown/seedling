@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Decline the approval
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ApprovePage" as page
+  participant "HttpCaseApprovalService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ApprovalsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RecordApprovalCommandHandler" as record
+  participant "RespCase" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Decline
+page -> client : decline(caseId)
+client -> controller : POST /api/cases/{caseId}/approvals (Declined)
+controller -> record : Send RecordApprovalCommand(Declined)
+record -> db : Load RespCase for current parent
+db --> record : Case
+record -> entity : Pause(at), CurrentStepKey = form-review (L2-020)
+entity --> record : Paused, status ReadyToApprove
+record -> db : Save Approval(Declined) and AuditEntry ApprovalDeclined
+db --> record : Commit
+record --> controller : ApprovalResultDto, no submissions
+controller --> client : 200
+client --> page : Declined
+page --> actor : Navigate to Check the forms; fields editable; nothing sent
+@enduml

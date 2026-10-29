@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Sensitive data vault
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(admin, "Admin app", "Angular", "Reviewer and operator console (frontend/projects/admin)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+  ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+}
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+
+Rel(parent, pwa, "Uses", "HTTPS")
+Rel(reviewer, admin, "Uses", "HTTPS")
+Rel(pwa, api, "Saves, lists masked, reveals after re-authentication", "JSON/HTTPS")
+Rel(admin, api, "Reads vault items with a stated purpose", "JSON/HTTPS")
+Rel(api, vault, "Reads and writes ciphertext; appends access log", "EF Core / Blob SDK")
+Rel(api, db, "Reads accounts, cases, challenges", "EF Core")
+Rel(worker, vault, "Deletes and exports", "EF Core / Blob SDK")
+Rel(api, sms, "Sends re-authentication code", "HTTPS")
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Pre-fill the forms
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "FormReviewPage" as page
+  participant "HttpCaseFormsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CaseFormsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "PrefillFormsCommandHandler" as handler
+  participant "FormFieldCatalog" as catalog
+  participant "FormPrefillService" as mapper
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ISensitiveDataVault" as vault
+  database "Seedlings database" as db
+end box
+actor -> page : Open Check the forms
+page -> client : prefill(caseId)
+client -> controller : POST /api/cases/{caseId}/forms
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send PrefillFormsCommand
+handler -> db : Load RespCase for current parent (L2-045)
+db --> handler : Case
+alt provider not selected
+  handler --> controller : ConflictException provider_not_selected
+  controller --> client : 409 ProblemDetails
+else provider selected
+  handler -> db : Load IntakeField rows, Child, ParentAccount, existing PrefilledForm rows
+  db --> handler : Intake snapshot and stored forms
+  loop each FormKind (ProviderApplication, Sde0093)
+    handler -> catalog : For(kind, providerId)
+    catalog --> handler : Field definitions
+    handler -> mapper : Fill empty fields from intake; keep Parent values (L2-018)
+    mapper --> handler : Form with filled and unfilled fields
+  end
+  handler -> vault : ReadMaskedAsync(SIN items, purpose FormReview)
+  vault --> handler : Last three digits; read logged
+  handler -> db : Save PrefilledForm rows, case ReadyToApprove, AuditEntry FormsPrefilled
+  db --> handler : Commit
+  handler --> controller : PrefilledFormsDto, unfilled fields first
+  controller --> client : 200
+end
+client --> page : Forms
+page --> actor : Needs you list at the top, then Filled in by Seedlings
+@enduml

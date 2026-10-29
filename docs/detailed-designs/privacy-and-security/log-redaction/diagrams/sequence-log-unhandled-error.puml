@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — Log an unhandled error raised while processing a SIN
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ExceptionHandlingMiddleware" as exmw
+  participant "IntakeController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveSinCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  participant "RedactingSink" as sink
+  participant "PersonalDataRedactor" as redactor
+  database "Log files and console" as logs
+end box
+actor -> client : Save SIN
+client -> exmw : PUT /api/cases/{caseId}/sin
+exmw -> ctrl : Next
+ctrl -> handler : Send SaveSinCommand
+handler -> vault : StoreSinAsync
+vault --> handler : throws exception whose message contains the SIN
+handler --> exmw : Exception propagates
+exmw -> sink : LogError(ex, "Unhandled exception processing {Path}")
+sink -> redactor : RedactText(message, stack trace, inner exceptions)
+redactor --> sink : SIN replaced by [REDACTED]
+sink -> sink : Build LogEvent with RedactedException (L2-047 AC2)
+sink -> logs : Write
+exmw --> client : 500 ProblemDetails "An unexpected error occurred."
+@enduml

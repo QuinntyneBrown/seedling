@@ -1,0 +1,44 @@
+@startuml
+title UML sequence behaviour — Show a stored SIN masked
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "HttpVaultService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "VaultController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetMaskedSinsQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  database "Sensitive data vault" as vdb
+end box
+actor -> page : Return to a SIN step
+page -> client : getMaskedSins(caseId)
+client -> ctrl : GET /api/cases/{caseId}/sins
+ctrl -> handler : Send GetMaskedSinsQuery
+handler -> vault : GetMaskedSinsAsync(caseId, VaultAccess(Parent, ShowMasked))
+vault -> vdb : SELECT Subject, LastThree (ciphertext not read)
+vault -> vdb : INSERT VaultAccessLogEntry (L2-032 AC2)
+vault --> handler : SinSummaryDto list
+handler --> ctrl : Result
+ctrl --> client : 200 [{subject, masked: "*** *** 219"}] (L2-032 AC3)
+client --> page : Masked SINs
+page --> actor : Show last 3 digits only
+@enduml

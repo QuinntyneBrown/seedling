@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Installable PWA
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling), hosted on Azure Static Web Apps")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain; not called by this feature")
+}
+Rel(parent, pwa, "Installs and launches", "HTTPS")
+Rel(pwa, pwa, "Precaches shell; checks ngsw.json for new versions", "Service worker")
+@enduml

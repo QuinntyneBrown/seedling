@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Navigate from the roadmap
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "sl-roadmap" as roadmap
+  participant "WizardShell" as shell
+  participant "wizardStepGuard" as guard
+  participant "WizardStore" as store
+  participant "Wizard step page" as page
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetWizardStepAnswerQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+alt Parent taps a done step
+  actor -> roadmap : Tap "Your name" (button)
+  roadmap -> shell : stepSelected("name")
+  shell -> guard : Navigate to /wizard/name
+  guard -> store : Is "name" done or current?
+  store --> guard : Done
+  guard --> page : Allow
+  page -> controller : GET /api/wizard/steps/name
+  controller -> handler : Send GetWizardStepAnswerQuery
+  handler -> db : Read saved answer for current parent
+  db --> handler : Jordan, Lee
+  handler --> controller : StepAnswerDto
+  controller --> page : 200 { answer }
+  page --> actor : L2-038 review or change the saved answer
+else Parent taps an upcoming step
+  actor -> roadmap : Tap "Your SIN" (plain text, no handler)
+  roadmap --> actor : L2-038 stays on the current step
+else Parent types the URL of an upcoming step
+  actor -> guard : Open /wizard/parent-sin
+  guard -> store : Is "parent-sin" done or current?
+  store --> guard : Upcoming
+  guard --> actor : Redirect to the current step route
+end
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+title UML sequence behaviour — Operate a screen by keyboard
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent (keyboard)" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Router" as router
+  participant "SeedlingsTitleStrategy" as title
+  participant "RouteFocus" as focus
+  participant "App shell" as shell
+  participant "Page controls" as controls
+end box
+actor -> shell : Tab
+shell --> actor : Skip to content link gets focus ring
+actor -> shell : Enter
+shell --> actor : Focus moves to main#main
+actor -> controls : Activate a link with Enter
+controls -> router : navigate()
+router -> title : updateTitle()
+title -> title : document.title = "<screen> — Seedlings"
+router -> focus : NavigationEnd
+focus -> controls : Focus h1 (tabindex -1)
+controls --> actor : Screen reader reads the new heading
+loop Tab through the screen
+  actor -> controls : Tab
+  controls -> controls : :focus-visible ring >= 2 px, --colorStrokeFocus2
+  controls -> controls : scroll-padding keeps the control clear of top bar and bottom nav
+  controls --> actor : Next control reached and visible (L2-049 criterion 2)
+end
+actor -> controls : Enter or Space on a button, arrow keys in a radio group
+controls --> actor : Native control operates
+@enduml

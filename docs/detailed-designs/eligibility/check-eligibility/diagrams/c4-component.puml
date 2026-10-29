@@ -1,0 +1,37 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Check eligibility
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(qpage, "WizardEligibilityPage", "Angular page", "One question per screen")
+  Component(rpage, "WizardResultPage", "Angular page", "Family total and per-child cards")
+  Component(guard, "eligibilityShownGuard", "Route guard", "Sends parent back to the check")
+  Component(svc, "HttpEligibilityService", "ELIGIBILITY_SERVICE", "saveAnswer, evaluate, markShown")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "EligibilityController", "ASP.NET Core controller", "/api/eligibility")
+  Component(save, "SaveEligibilityAnswerCommandHandler", "MediatR handler", "Upserts one answer")
+  Component(eval, "EvaluateEligibilityCommandHandler", "MediatR handler", "Checks completeness, computes per child")
+  Component(shown, "MarkEligibilityResultShownCommandHandler", "MediatR handler", "Sets ShownAt, moves case on")
+  Component(calc, "EligibilityCalculator", "Domain service", "Deterministic CLB and CESG rules")
+  Component(rates, "IGrantRatesProvider", "Application port", "Grant rates table in force")
+  Component(gate, "EligibilityGateBehavior", "MediatR pipeline behaviour", "Rejects SIN and document commands before ShownAt")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "EligibilityAnswers, EligibilityResult, GrantRatesTable")
+}
+
+Rel(qpage, svc, "Saves answers")
+Rel(rpage, svc, "Evaluates, marks shown")
+Rel(guard, svc, "Reads case eligibilityShownAt")
+Rel(svc, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, save, "Sends SaveEligibilityAnswerCommand")
+Rel(ctrl, eval, "Sends EvaluateEligibilityCommand")
+Rel(ctrl, shown, "Sends MarkEligibilityResultShownCommand")
+Rel(eval, calc, "Computes each child")
+Rel(calc, rates, "Reads thresholds and amounts")
+Rel(rates, db, "Reads", "EF Core")
+Rel(save, db, "Writes answers", "EF Core")
+Rel(eval, db, "Writes results", "EF Core")
+Rel(shown, db, "Writes ShownAt and status", "EF Core")
+Rel(gate, db, "Reads ShownAt", "EF Core")
+@enduml

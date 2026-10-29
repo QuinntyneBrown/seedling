@@ -1,0 +1,123 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Sign up and verify
+
+enum ContactChannel {
+  Push
+  Sms
+  Email
+}
+
+enum VerificationOutcome {
+  Accepted
+  Incorrect
+  Expired
+  Invalidated
+}
+
+class VerificationChallenge {
+  +Guid Id
+  +string Destination
+  +string DestinationHash
+  +ContactChannel Channel
+  +string CodeHash
+  +string RequestIpHash
+  +DateTimeOffset CreatedAt
+  +DateTimeOffset ExpiresAt
+  +int FailedAttempts
+  +DateTimeOffset? ConsumedAt
+  +DateTimeOffset? InvalidatedAt
+  +{static} Issue(destination, channel, codeHash, ipHash, now): VerificationChallenge
+  +Verify(code: string, hasher: IVerificationCodeHasher, now: DateTimeOffset): VerificationOutcome
+  +Supersede(now: DateTimeOffset): void
+}
+
+class ParentAccount {
+  +Guid Id
+  +string? Email
+  +string? Phone
+  +DateTimeOffset CreatedAt
+  +DateTimeOffset TermsAcceptedAt
+  +int SessionVersion
+  +{static} CreateFor(destination, channel, now): ParentAccount
+}
+
+class RequestVerificationCodeCommand {
+  +ContactChannel Channel
+  +string Destination
+  +string ClientIp
+}
+
+class RequestVerificationCodeCommandValidator {
+  +RequestVerificationCodeCommandValidator()
+}
+
+class RequestVerificationCodeCommandHandler {
+  +Handle(command: RequestVerificationCodeCommand): Task<CodeRequestedDto>
+}
+
+class CodeRequestedDto {
+  +Guid ChallengeId
+  +ContactChannel Channel
+  +string MaskedDestination
+  +DateTimeOffset ExpiresAt
+}
+
+class VerifyCodeCommand {
+  +Guid ChallengeId
+  +string Code
+}
+
+class VerifyCodeCommandHandler {
+  +Handle(command: VerifyCodeCommand): Task<SessionTokens>
+}
+
+class VerificationRateLimiter {
+  +int DestinationLimitPerHour = 3
+  +int IpLimitPerHour = 20
+  +EnsureAllowedAsync(destinationHash, ipHash, now): Task
+}
+
+interface IVerificationCodeHasher {
+  +Hash(value: string): string
+  +Matches(value: string, hash: string): bool
+}
+
+interface IVerificationCodeSender {
+  +SendAsync(channel: ContactChannel, destination: string, code: string): Task
+}
+
+interface ISessionIssuer {
+  +IssueAsync(account: ParentAccount): Task<SessionTokens>
+}
+
+class TooManyRequestsException {
+  +TimeSpan RetryAfter
+}
+
+RequestVerificationCodeCommandValidator ..> RequestVerificationCodeCommand : validates
+RequestVerificationCodeCommandHandler ..> RequestVerificationCodeCommand : handles
+RequestVerificationCodeCommandHandler ..> CodeRequestedDto : returns
+RequestVerificationCodeCommandHandler --> VerificationRateLimiter : asks
+RequestVerificationCodeCommandHandler --> IVerificationCodeSender : sends via
+RequestVerificationCodeCommandHandler --> IVerificationCodeHasher : hashes with
+RequestVerificationCodeCommandHandler ..> VerificationChallenge : creates
+VerificationRateLimiter ..> TooManyRequestsException : throws
+VerifyCodeCommandHandler ..> VerifyCodeCommand : handles
+VerifyCodeCommandHandler --> VerificationChallenge : loads / verifies
+VerifyCodeCommandHandler --> ParentAccount : finds or creates
+VerifyCodeCommandHandler --> ISessionIssuer : issues session
+VerificationChallenge --> ContactChannel : has
+VerificationChallenge ..> VerificationOutcome : returns
+@enduml

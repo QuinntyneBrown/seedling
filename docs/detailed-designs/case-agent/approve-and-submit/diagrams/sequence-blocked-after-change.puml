@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Submission blocked after a data change
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ApprovePage" as page
+  participant "HttpCaseApprovalService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ApprovalsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SubmitApplicationCommandHandler" as submit
+  participant "CaseDataSnapshotBuilder" as snapshot
+  participant "ApprovalGate" as gate
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ApprovalGatedProviderGateway" as gateway
+  database "Seedlings database" as db
+end box
+note over actor, db : A form value, document or recipient changed after the approval was recorded
+actor -> page : Tap Try again
+page -> client : retrySubmission(caseId)
+client -> controller : POST /api/cases/{caseId}/submissions
+controller -> submit : Send SubmitApplicationCommand
+submit -> snapshot : Recompute hash
+snapshot --> submit : New hash
+submit -> db : Load approvals for case
+db --> submit : Latest Approved with old hash
+submit -> gate : EnsureApproved(case, approvals, newHash)
+gate --> submit : ConflictException approval_required (L2-020)
+submit -> db : Case status ReadyToApprove
+db --> submit : Commit
+submit --> controller : Exception
+controller --> client : 409 approval_required
+client --> page : Approval needed
+page --> actor : Show the updated summary to approve again
+note right of gateway : Never called; the decorator would block the send as well
+@enduml

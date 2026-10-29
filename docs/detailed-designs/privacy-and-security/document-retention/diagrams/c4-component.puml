@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Document retention
+
+Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "PrivacyController", "ASP.NET Core controller", "GET/PUT /api/me/privacy/document-retention")
+  Component(set, "SetDocumentRetentionCommandHandler", "MediatR handler", "Stores the choice and audits it")
+}
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "DocumentRetentionJob", "Hosted service / triggered WebJob", "Runs on schedule, sends ApplyDocumentRetentionCommand")
+  Component(apply, "ApplyDocumentRetentionCommandHandler", "MediatR handler", "Deletes or retains per case")
+  Component(rule, "DocumentRetentionPolicy", "Domain service", "Decides Delete or Retain for one case")
+  Component(vaultport, "ISensitiveDataVault", "Application port", "DeleteCaseDocumentsAsync")
+  Component(audit, "IAuditTrail", "Application port", "Appends AuditEntry")
+  Component(notify, "INotificationDispatcher", "Application port", "Sends DocumentsDeleted")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, set, "Sends SetDocumentRetentionCommand")
+Rel(set, db, "Updates ParentAccount, appends AuditEntry")
+Rel(job, apply, "Sends ApplyDocumentRetentionCommand")
+Rel(apply, db, "Selects due cases")
+Rel(apply, rule, "Evaluates")
+Rel(apply, vaultport, "Deletes documents")
+Rel(apply, audit, "Logs DocumentsDeleted or DocumentsRetained")
+Rel(apply, notify, "Notifies parent")
+Rel(vaultport, vault, "Deletes rows and blobs")
+@enduml

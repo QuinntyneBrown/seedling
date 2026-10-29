@@ -1,0 +1,44 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Start the onboarding wizard
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(guard, "wizardEntryGuard", "Angular CanActivateFn", "Routes to welcome, current step or dashboard")
+  Component(welcome, "WizardWelcomePage", "Angular page", "Step count, About N minutes, Start")
+  Component(done, "WizardDonePage", "Angular page", "You're all set, link to dashboard")
+  Component(term, "sl-term (Term)", "Design-system component", "Expansion and explanation at first use")
+  Component(store, "WizardStore", "Angular signal store", "Holds WizardState")
+  Component(client, "HttpWizardService", "WIZARD_SERVICE implementation", "Typed calls to /api/wizard")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "WizardController", "ASP.NET Core controller", "GET and POST /api/wizard, POST /api/wizard/finish")
+  Component(query, "GetWizardStateQueryHandler", "MediatR handler", "Returns the plan and progress")
+  Component(start, "StartWizardCommandHandler", "MediatR handler", "Creates WizardProgress once")
+  Component(finish, "FinishWizardCommandHandler", "MediatR handler", "Sets FinishedAt, moves cases on")
+  Component(reader, "WizardContextReader", "Application service", "Children, result shown, existing RESP answer")
+  Component(planner, "WizardPlanner", "Domain service", "Catalog plus context to WizardPlan")
+  Component(builder, "WizardStateBuilder", "Application service", "Progress plus plan to WizardStateDto")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "WizardProgress, Child, EligibilityResult, RespCase")
+
+Rel(guard, store, "Reads state")
+Rel(welcome, store, "start()")
+Rel(done, store, "Reads finished state")
+Rel(welcome, term, "Renders RESP and CLB at first use")
+Rel(store, client, "Calls")
+Rel(client, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, query, "Sends GetWizardStateQuery")
+Rel(ctrl, start, "Sends StartWizardCommand")
+Rel(ctrl, finish, "Sends FinishWizardCommand")
+Rel(query, reader, "Reads context")
+Rel(start, reader, "Reads context")
+Rel(finish, reader, "Reads context")
+Rel(query, planner, "Plans steps")
+Rel(query, builder, "Builds DTO")
+Rel(start, builder, "Builds DTO")
+Rel(finish, builder, "Builds DTO")
+Rel(reader, db, "Reads", "EF Core")
+Rel(start, db, "Writes WizardProgress", "EF Core")
+Rel(finish, db, "Writes WizardProgress and RespCase", "EF Core")
+@enduml

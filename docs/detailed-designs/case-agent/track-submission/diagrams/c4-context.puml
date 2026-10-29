@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Track a submission
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+
+Rel(seedlings, provider, "Asks for application status daily", "Protocol <TO SUPPLY>")
+Rel(seedlings, push, "Notifies account open or following up")
+Rel(seedlings, sms, "Notifies, when chosen")
+Rel(seedlings, email, "Notifies, when chosen")
+Rel(parent, seedlings, "Sees the case status", "HTTPS")
+Rel(reviewer, seedlings, "Follows up overdue confirmations", "HTTPS")
+@enduml

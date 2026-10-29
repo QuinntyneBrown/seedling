@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Log redaction
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+Person(operator, "Operator", "Reads logs and telemetry to diagnose faults")
+
+Rel(parent, seedlings, "Sends SINs, codes and tokens to")
+Rel(seedlings, appinsights, "Sends redacted logs and telemetry to", "HTTPS")
+Rel(operator, appinsights, "Queries")
+@enduml

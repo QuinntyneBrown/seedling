@@ -1,0 +1,36 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Wizard roadmap
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(shell, "WizardShell", "Angular shell component", "Maps state to roadmap inputs; panel at 992 px and wider, bar below")
+  Component(panel, "sl-roadmap (Roadmap)", "Design-system component", "Groups, statuses, aria-current, done steps as buttons")
+  Component(bar, "sl-roadmap-bar (RoadmapBar)", "Design-system component", "Step label, time, meter, All steps toggle")
+  Component(fmt, "formatRoadmapTime", "TypeScript function", "Visible and accessible time wording")
+  Component(guard, "wizardStepGuard", "Angular CanActivateFn", "Redirects upcoming steps to the current step")
+  Component(store, "WizardStore", "Angular signal store", "Holds WizardState")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "WizardController", "ASP.NET Core controller", "Every /api/wizard response carries the roadmap")
+  Component(builder, "WizardStateBuilder", "Application service", "Assembles WizardStateDto")
+  Component(roadmap, "RoadmapBuilder", "Domain service", "Done, current, upcoming; numbering per group")
+  Component(timer, "WizardTimeEstimator", "Domain service", "Spent, remaining, percent")
+  Component(progress, "WizardProgress", "Domain entity", "CompletedSteps, ElapsedSeconds, RecordActivity")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "WizardProgress")
+
+Rel(shell, store, "Reads state()")
+Rel(shell, panel, "Renders at 992 px and wider")
+Rel(shell, bar, "Renders below 992 px")
+Rel(bar, panel, "Projects the list when expanded")
+Rel(shell, fmt, "Words time figures")
+Rel(guard, store, "Reads currentStepKey")
+Rel(store, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, builder, "Via MediatR handlers")
+Rel(builder, roadmap, "Build(plan, progress)")
+Rel(builder, timer, "Estimate(plan, progress)")
+Rel(roadmap, progress, "Reads")
+Rel(timer, progress, "Reads")
+Rel(builder, db, "Progress loaded by handler", "EF Core")
+@enduml

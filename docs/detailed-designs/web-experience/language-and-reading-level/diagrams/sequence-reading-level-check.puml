@@ -1,0 +1,51 @@
+@startuml
+title UML sequence behaviour — Check reading level in the build
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Contributor" as actor
+box "Frontend — Seedlings workspace build" #E0F2FE
+  participant "GitHub Actions CI (ci.yml)" as ci
+  participant "check-reading-level.mjs" as script
+  participant "reading-level.allow.json" as allow
+  participant "en.json / fr.json" as catalogs
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "Notification templates (path <TO SUPPLY>)" as templates
+end box
+actor -> ci : Push or open a pull request
+ci -> script : npm run readability:check
+script -> catalogs : Read every key and string
+script -> templates : Read every template body
+script -> allow : Read program-name allowlist
+script -> script : Fail on any key present in one catalog only
+loop Each string
+  script -> script : Strip placeholders and markup; replace allowlisted terms
+  alt English
+    script -> script : Flesch-Kincaid grade
+  else French
+    script -> script : French grade formula <TO SUPPLY>
+  end
+  opt Grade above 6 (L2-028 criterion 1)
+    script -> script : Record key, file, grade, text
+  end
+end
+alt Any failure recorded
+  script --> ci : Exit 1 with the list
+  ci --> actor : Build fails
+else None
+  script --> ci : Exit 0
+  ci --> actor : Build continues
+end
+@enduml

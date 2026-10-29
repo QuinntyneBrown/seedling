@@ -1,0 +1,38 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Answer a wizard question
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(page, "Wizard step page", "Angular page", "WizardLanguagePage, WizardNamePage, WizardContactPage, ...")
+  Component(step, "sl-wizard-step (WizardStep)", "Design-system component", "One prompt, one body, one primary, Back")
+  Component(store, "WizardStore", "Angular signal store", "answer(), previousRoute()")
+  Component(client, "HttpWizardService", "WIZARD_SERVICE implementation", "Typed calls to /api/wizard")
+}
+ContainerDb(idb, "Device store", "IndexedDB", "Offline queue")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "WizardController", "ASP.NET Core controller", "GET and PUT /api/wizard/steps/{stepKey}")
+  Component(validator, "AnswerWizardStepCommandValidator", "FluentValidation", "Answer shape per step")
+  Component(handler, "AnswerWizardStepCommandHandler", "MediatR handler", "Applies the answer and advances")
+  Component(read, "GetWizardStepAnswerQueryHandler", "MediatR handler", "Returns the saved answer")
+  Component(steps, "IWizardStep implementations", "Application services", "LanguageStep, NameStep, ContactStep, ChildrenStep, ...")
+  Component(planner, "WizardPlanner", "Domain service", "Current plan and next step")
+  Component(progress, "WizardProgress", "Domain entity", "CompleteStep moves the current step")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "ParentAccount, Child, EligibilityAnswers, WizardProgress")
+
+Rel(page, step, "Renders inside")
+Rel(page, store, "answer(stepKey, answer)")
+Rel(store, client, "Calls")
+Rel(store, idb, "Queues when offline")
+Rel(client, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, handler, "Sends AnswerWizardStepCommand")
+Rel(ctrl, read, "Sends GetWizardStepAnswerQuery")
+Rel(handler, validator, "Validated by, via ValidationBehavior")
+Rel(handler, planner, "Builds plan")
+Rel(handler, steps, "ApplyAsync")
+Rel(read, steps, "ReadAsync")
+Rel(handler, progress, "CompleteStep")
+Rel(steps, db, "Reads and writes", "EF Core")
+Rel(handler, db, "Saves in one unit of work", "EF Core")
+@enduml

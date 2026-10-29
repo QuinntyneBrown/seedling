@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Log a request that carries a SIN
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Serilog request logging" as reqlog
+  participant "IntakeController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveSinCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDestructuringPolicy" as destr
+  participant "RedactionEnricher" as enricher
+  participant "RedactingSink" as sink
+  database "Log files and console" as logs
+end box
+actor -> page : Save SIN
+page -> client : saveSin(...)
+client -> reqlog : PUT /api/cases/{caseId}/sin (SIN in body only)
+reqlog -> ctrl : Next
+ctrl -> handler : Send SaveSinCommand
+handler -> destr : LogInformation("Saving {@Command}", command)
+destr -> destr : Sin marked [Sensitive] becomes [REDACTED] (L2-047 AC1)
+destr -> enricher : LogEvent
+enricher -> enricher : Mask properties named Sin, Code, Token, Password, Authorization
+enricher -> enricher : Mask 9-digit SIN and JWT patterns in string values
+enricher -> sink : LogEvent
+sink -> logs : Write redacted event
+handler --> ctrl : 204
+ctrl --> reqlog : Response
+reqlog -> sink : "HTTP PUT {RequestPath} responded 204" (no body, no query)
+sink -> logs : Write
+reqlog --> client : 204
+@enduml

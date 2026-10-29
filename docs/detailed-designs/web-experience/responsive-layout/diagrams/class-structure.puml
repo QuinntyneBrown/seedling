@@ -1,0 +1,86 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Responsive layout
+
+enum Tier {
+  xs : below 36rem (576px)
+  sm : from 36rem (576px)
+  md : from 48rem (768px)
+  lg : from 62rem (992px)
+  xl : from 75rem (1200px)
+}
+
+class Breakpoints <<_breakpoints.scss>> {
+  +$bp-sm: 36rem
+  +$bp-md: 48rem
+  +$bp-lg: 62rem
+  +$bp-xl: 75rem
+  +respond-to(tier): mixin
+}
+
+class ResponsiveOverrides <<responsive.ts>> {
+  +responsiveOverrides: ThemeOverride[]
+}
+
+class ThemeOverride {
+  +media: string
+  +tokens: Partial<Theme>
+}
+
+class LayoutTokens <<tokens/global/layout.ts>> {
+  +layoutContentMaxWidth: "1120px"
+  +layoutReadingMaxWidth
+  +layoutGutter
+}
+
+class TargetSize <<component token>> {
+  +--sl-target-min: 44px
+  +appliesWhen: "(pointer: coarse)"
+}
+
+class TopBar <<component sl-top-bar>> {
+  +items: InputSignal<NavItem[]>
+  +current: InputSignal<string>
+}
+
+class BottomNav <<component sl-bottom-nav>> {
+  +items: InputSignal<NavItem[]>
+  +current: InputSignal<string>
+}
+
+class NavItem {
+  +key: string
+  +label: string
+  +route: string
+  +icon: string
+}
+
+class App <<component app-root>> {
+  #nav: Signal<NavItem[]>
+  #current: Signal<string>
+}
+
+Breakpoints ..> Tier : defines
+ResponsiveOverrides "1" *-- "2" ThemeOverride
+ResponsiveOverrides ..> Breakpoints : mirrors
+App *-- TopBar : renders
+App *-- BottomNav : renders
+TopBar ..> Breakpoints : visible from md
+BottomNav ..> Breakpoints : visible below md
+TopBar ..> TargetSize
+BottomNav ..> TargetSize
+TopBar o-- "*" NavItem
+BottomNav o-- "*" NavItem
+App ..> LayoutTokens : .container max width
+@enduml

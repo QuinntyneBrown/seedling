@@ -1,0 +1,69 @@
+@startuml
+title UML sequence behaviour — Edit a pre-filled field
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "FormReviewPage" as page
+  participant "EditFormFieldDialog" as dialog
+  participant "HttpCaseFormsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CaseFormsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ValidationBehavior" as validation
+  participant "EditPrefilledFieldCommandHandler" as handler
+  participant "PrefilledForm" as form
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ISensitiveDataVault" as vault
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Edit on a field
+page -> dialog : Open CDK dialog with current value
+opt field is a SIN
+  dialog -> actor : Re-authentication overlay (L2-032)
+  actor --> dialog : Code confirmed
+end
+actor -> dialog : Enter new value and save
+dialog -> client : saveField(caseId, formKind, fieldKey, value)
+client -> controller : PUT /api/cases/{caseId}/forms/{formKind}/fields/{fieldKey}
+controller -> validation : Send EditPrefilledFieldCommand
+validation -> validation : Apply catalog rule (L2-046)
+alt value invalid
+  validation --> controller : ValidationException
+  controller --> client : 400 ValidationProblemDetails
+  client --> dialog : Field errors
+  dialog --> actor : Show the error on the field
+else value valid
+  validation -> handler : Handle
+  handler -> db : Load PrefilledForm for current parent
+  db --> handler : Form
+  opt field is a SIN
+    handler -> vault : StoreSinAsync(caseId, sin)
+    vault --> handler : VaultItemId
+  end
+  handler -> form : SetParentValue(fieldKey, value or reference), Source = Parent
+  form --> handler : Updated field
+  handler -> db : Save form and AuditEntry FormFieldEdited (field name only)
+  db --> handler : Commit
+  handler --> controller : PrefilledFieldDto
+  controller --> client : 200
+  client --> dialog : Saved
+  dialog --> page : Close with new value
+  page --> actor : Updated row; submission will use this value (L2-018)
+end
+@enduml

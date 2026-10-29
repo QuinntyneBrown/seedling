@@ -1,0 +1,104 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Wizard roadmap
+
+enum RoadmapStepStatus {
+  Done
+  Current
+  Upcoming
+}
+
+enum RoadmapGroup {
+  GettingStarted
+  YourDetails
+  ReviewAndSend
+}
+
+class WizardPlan {
+  +IReadOnlyList<PlannedStep> Steps
+  +int TotalStandardSeconds
+}
+
+class PlannedStep <<record>> {
+  +string StepKey
+  +string Label
+  +RoadmapGroup Group
+  +int StandardSeconds
+}
+
+class WizardProgress {
+  +string CurrentStepKey
+  +ISet<string> CompletedSteps
+  +int ElapsedSeconds
+  +DateTimeOffset LastActiveAt
+  +void RecordActivity(now: DateTimeOffset, idleCap: TimeSpan)
+}
+
+class RoadmapBuilder {
+  +IReadOnlyList<RoadmapGroupDto> Build(plan: WizardPlan, progress: WizardProgress)
+}
+
+class WizardTimeEstimator {
+  +RoadmapTimeDto Estimate(plan: WizardPlan, progress: WizardProgress)
+}
+
+class WizardOptions {
+  +int IdleCapSeconds
+}
+
+class RoadmapGroupDto <<record>> {
+  +RoadmapGroup Group
+  +int CurrentNumber
+  +int Count
+  +IReadOnlyList<RoadmapStepDto> Steps
+}
+
+class RoadmapStepDto <<record>> {
+  +string Key
+  +string Label
+  +string Route
+  +RoadmapStepStatus Status
+  +int StandardSeconds
+}
+
+class RoadmapTimeDto <<record>> {
+  +int SpentMinutes
+  +int RemainingMinutes
+  +int RemainingSeconds
+  +int ProgressPercent
+}
+
+class AnswerWizardStepCommandHandler {
+  +Handle(command: AnswerWizardStepCommand): Task<WizardStateDto>
+}
+
+class WizardStateBuilder {
+  +WizardStateDto Build(progress: WizardProgress, plan: WizardPlan)
+}
+
+WizardPlan "1" *-- "*" PlannedStep : holds
+RoadmapBuilder ..> WizardPlan : reads
+RoadmapBuilder ..> WizardProgress : reads
+WizardTimeEstimator ..> WizardPlan : sums standard estimates
+WizardTimeEstimator ..> WizardProgress : reads ElapsedSeconds
+AnswerWizardStepCommandHandler ..> WizardOptions : reads IdleCapSeconds
+AnswerWizardStepCommandHandler --> WizardProgress : CompleteStep calls RecordActivity with the idle cap
+RoadmapBuilder ..> RoadmapGroupDto : creates
+RoadmapGroupDto "1" *-- "*" RoadmapStepDto : contains
+RoadmapStepDto --> RoadmapStepStatus : has
+RoadmapGroupDto --> RoadmapGroup : is
+WizardTimeEstimator ..> RoadmapTimeDto : creates
+WizardStateBuilder ..> RoadmapBuilder : uses
+WizardStateBuilder ..> WizardTimeEstimator : uses
+@enduml

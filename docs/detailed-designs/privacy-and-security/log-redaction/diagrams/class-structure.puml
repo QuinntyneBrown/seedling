@@ -1,0 +1,77 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Log redaction
+
+class SensitiveAttribute <<attribute>>
+
+class SaveSinCommand {
+  +Guid CaseId
+  +SinSubject Subject
+  +[Sensitive] string Sin
+}
+
+class VerifyCodeCommand {
+  +Guid ChallengeId
+  +[Sensitive] string Code
+}
+
+class PersonalDataRedactor {
+  +Mask: string = "[REDACTED]"
+  +SensitiveNames: ISet<string>
+  +IsSensitiveName(name: string): bool
+  +RedactText(text: string): string
+}
+
+class SensitiveDestructuringPolicy {
+  +TryDestructure(value, factory, out result): bool
+}
+
+class RedactionEnricher {
+  +Enrich(logEvent, factory): void
+}
+
+class RedactingSink {
+  -ILogEventSink _inner
+  +Emit(logEvent: LogEvent): void
+}
+
+class RedactedException {
+  +string OriginalType
+  +string RedactedMessage
+  +string RedactedStackTrace
+}
+
+class SeedlingLogging <<static>> {
+  +ConfigureRedaction(cfg: LoggerConfiguration): LoggerConfiguration
+  +WriteToRedacted(cfg, sinks): LoggerConfiguration
+}
+
+interface IDestructuringPolicy <<Serilog>>
+interface ILogEventEnricher <<Serilog>>
+interface ILogEventSink <<Serilog>>
+
+SaveSinCommand ..> SensitiveAttribute : marked
+VerifyCodeCommand ..> SensitiveAttribute : marked
+SensitiveDestructuringPolicy ..|> IDestructuringPolicy
+RedactionEnricher ..|> ILogEventEnricher
+RedactingSink ..|> ILogEventSink
+SensitiveDestructuringPolicy ..> SensitiveAttribute : reads
+SensitiveDestructuringPolicy --> PersonalDataRedactor
+RedactionEnricher --> PersonalDataRedactor
+RedactingSink --> PersonalDataRedactor
+RedactingSink ..> RedactedException : substitutes
+SeedlingLogging ..> SensitiveDestructuringPolicy : registers
+SeedlingLogging ..> RedactionEnricher : registers
+SeedlingLogging ..> RedactingSink : wraps sinks
+@enduml

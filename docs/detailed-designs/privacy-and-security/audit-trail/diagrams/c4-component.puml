@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Audit trail
+
+Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ActivityController", "ASP.NET Core controller", "GET only: /api/cases/{caseId}/activity")
+  Component(query, "GetCaseActivityQueryHandler", "MediatR handler", "Owner-scoped, newest first")
+  Component(writers, "Feature handlers", "MediatR handlers", "Agent steps, approvals, submissions, reviewer actions")
+  Component(port, "IAuditTrail", "Application port", "AppendAsync(AuditEntry)")
+  Component(impl, "AuditTrail", "Infrastructure service", "Adds entry to the current unit of work")
+  Component(guard, "AppendOnlyAuditInterceptor", "EF Core SaveChangesInterceptor", "Rejects Modified or Deleted AuditEntry")
+  Component(ctx, "AppDbContext", "EF Core", "DbSet<AuditEntry> AuditEntries")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "audit.AuditEntries with TR_AuditEntries_AppendOnly")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, query, "Sends GetCaseActivityQuery")
+Rel(query, ctx, "Reads")
+Rel(writers, port, "AppendAsync")
+Rel(impl, port, "Implements")
+Rel(impl, ctx, "Adds AuditEntry")
+Rel(ctx, guard, "SaveChanges intercepted by")
+Rel(ctx, db, "INSERT only", "TLS")
+@enduml

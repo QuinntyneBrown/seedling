@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Sessions and devices
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling), one copy per device")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue; persisted refresh token")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+
+Rel(parent, pwa, "Uses on phone and laptop", "HTTPS")
+Rel(pwa, idb, "Keeps refresh token when Keep me signed in is ticked")
+Rel(pwa, api, "Bearer requests, /api/auth/refresh, /api/auth/sign-out-all, /api/me/resume-point", "JSON/HTTPS")
+Rel(api, db, "Reads and writes refresh tokens, session version, progress", "EF Core")
+@enduml

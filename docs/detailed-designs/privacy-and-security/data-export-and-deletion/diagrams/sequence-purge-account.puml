@@ -1,0 +1,42 @@
+@startuml
+title UML sequence behaviour — Purge personal data and confirm
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "DataRequestJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ProcessDataRequestsCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "AccountPurger" as purger
+  participant "SensitiveDataVault" as vault
+  participant "NotificationDispatcher" as notify
+  database "Seedlings database" as db
+  database "Sensitive data vault" as vdb
+end box
+job -> handler : Send ProcessDataRequestsCommand on schedule
+handler -> db : Select Pending Delete requests
+handler -> handler : Copy ConfirmationDestination into memory
+handler -> purger : PurgeAsync(parentAccountId)
+purger -> vault : PurgeAccountAsync (SINs, documents, archives, access log)
+vault -> vdb : Delete rows and blobs
+purger -> db : Delete cases, children, intake, consents, approvals, notifications, push subscriptions
+purger -> db : Delete audit entries through the purge path
+purger -> db : Delete ParentAccount; keep DataRequest without personal fields
+purger --> handler : PurgeReport
+handler -> notify : Send deletion confirmation (L2-034 AC2, within 30 days)
+handler -> db : Status Completed; clear ConfirmationDestination
+@enduml

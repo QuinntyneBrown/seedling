@@ -1,0 +1,40 @@
+@startuml
+title UML sequence behaviour — Render stored text as text
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+  participant "Angular template interpolation" as tmpl
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as ctrl
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+note over db : Child.FirstName stored as typed: <script>alert(1)</script>
+actor -> page : Open case
+page -> client : getCase(caseId)
+client -> ctrl : GET /api/cases/{caseId}
+ctrl -> db : Read
+db --> ctrl : Raw text
+ctrl --> client : 200 application/json, X-Content-Type-Options: nosniff
+client --> page : CaseDto
+page -> tmpl : {{ child.firstName }}
+tmpl -> tmpl : Bind as text node; no innerHTML, no bypassSecurityTrust (L2-046 AC4)
+tmpl --> actor : Shows the literal characters; no script runs
+@enduml

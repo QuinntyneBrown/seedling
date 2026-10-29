@@ -1,0 +1,72 @@
+@startuml
+title UML sequence behaviour — Show the eligibility result
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardEligibilityPage" as qpage
+  participant "WizardResultPage" as rpage
+  participant "HttpEligibilityService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "EligibilityController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "EvaluateEligibilityCommandHandler" as handler
+  participant "EligibilityCalculator" as calc
+  participant "MarkEligibilityResultShownCommandHandler" as shown
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IGrantRatesProvider" as rates
+  database "Seedlings database" as db
+end box
+
+actor -> qpage : Tap Next question on the last question
+qpage -> client : evaluate()
+client -> controller : POST /api/eligibility/evaluate (bearer)
+controller -> handler : Send EvaluateEligibilityCommand
+handler -> db : Load answers, children and their cases
+db --> handler : Answers and cases
+alt Any question unanswered (L2-011 #4)
+  handler --> controller : ValidationException unanswered = [keys]
+  controller --> client : 400 ValidationProblemDetails
+  client --> qpage : Unanswered keys
+  qpage --> actor : First unanswered question, aria-invalid, no result
+else All answered
+  handler -> rates : GetInForceAsync(today)
+  rates -> db : Read GrantRatesTable
+  rates --> handler : Table (values <TO SUPPLY> from ESDC)
+  loop Each child
+    handler -> calc : Evaluate(answers, child, rates, today)
+    alt Born 2004 or later and income at or below CLB threshold for household size (L2-011 #2)
+      calc --> handler : QualifiesForClb, ClbEstimate, QualifiesForCesg
+    else Income above CLB threshold (L2-011 #3)
+      calc --> handler : No CLB, QualifiesForCesg at 20%, CesgExample
+    end
+  end
+  handler -> db : Upsert EligibilityResult per case
+  db --> handler : Saved
+  handler --> controller : EligibilityResultDto
+  controller --> client : 200 within 3 seconds of the request (L2-011 #1)
+  client --> rpage : Result
+  rpage --> actor : Family total and amount per child in dollars
+  rpage -> client : markShown(caseIds)
+  client -> controller : POST /api/eligibility/result-shown
+  controller -> shown : Send MarkEligibilityResultShownCommand
+  shown -> db : Set ShownAt once, CheckingEligibility -> CollectingDocuments
+  db --> shown : Saved
+  controller --> client : 204
+end
+@enduml

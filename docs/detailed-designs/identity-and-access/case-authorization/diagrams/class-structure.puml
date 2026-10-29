@@ -1,0 +1,104 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Case authorization
+
+interface ICurrentUser {
+  +Guid? ParentAccountId
+  +Guid? ReviewerId
+  +bool IsReviewer
+}
+
+class HttpCurrentUser {
+  -IHttpContextAccessor accessor
+}
+
+interface ITenantOwned {
+  +Guid ParentAccountId
+}
+
+class Child {
+  +Guid Id
+  +Guid ParentAccountId
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid ChildId
+}
+
+class IntakeField {
+  +Guid CaseId
+  +RespCase Case
+}
+
+class AppDbContext {
+  -ICurrentUser currentUser
+  #OnModelCreating(builder: ModelBuilder): void
+}
+
+class GetReviewCaseQueryHandler {
+  +Handle(query: GetReviewCaseQuery): Task<ReviewCaseDto>
+}
+
+class ReviewItem {
+  +Guid Id
+  +Guid CaseId
+  +DateTimeOffset? ResolvedAt
+}
+
+interface ISensitiveDataVault {
+  +ReadAsync(itemId: Guid, context: VaultAccessContext): Task<VaultItem>
+}
+
+class VaultAccessContext {
+  +AuditActor Actor
+  +Guid ActorId
+  +string Purpose
+}
+
+enum AuditActor {
+  Agent
+  Parent
+  Reviewer
+  System
+}
+
+class VaultAccessLogEntry {
+  +Guid Id
+  +Guid VaultItemId
+  +Guid CaseId
+  +AuditActor Actor
+  +Guid ActorId
+  +string Purpose
+  +DateTimeOffset At
+}
+
+class NotFoundException {
+  +string Message
+}
+
+HttpCurrentUser ..|> ICurrentUser
+Child ..|> ITenantOwned
+RespCase ..|> ITenantOwned
+IntakeField --> RespCase : filtered through
+AppDbContext --> ICurrentUser : filters by
+AppDbContext ..> ITenantOwned : global query filter
+GetReviewCaseQueryHandler --> ReviewItem : requires open
+GetReviewCaseQueryHandler --> ISensitiveDataVault : reads
+GetReviewCaseQueryHandler ..> NotFoundException : throws
+ISensitiveDataVault ..> VaultAccessContext : requires
+ISensitiveDataVault ..> VaultAccessLogEntry : appends
+VaultAccessContext --> AuditActor : has
+@enduml

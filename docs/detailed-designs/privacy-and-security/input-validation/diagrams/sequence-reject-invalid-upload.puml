@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Reject an oversized or disguised upload
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeDocumentCapturePage" as page
+  participant "HttpDocumentsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Request size limits" as limits
+  participant "ExceptionHandlingMiddleware" as exmw
+  participant "DocumentsController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ValidationBehavior" as behavior
+  participant "SaveDocumentCommandValidator" as validator
+  participant "FileSignatureInspector" as sniffer
+  participant "SaveDocumentCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Sensitive data vault" as vault
+end box
+actor -> page : Choose a file
+page -> client : upload(caseId, kind, file)
+client -> limits : POST multipart /api/cases/{caseId}/documents
+alt Body above the endpoint limit
+  limits --> client : 413 ProblemDetails; body not buffered (L2-046 AC3)
+else Within limit
+  limits -> exmw : Next
+  exmw -> ctrl : Next
+  ctrl -> behavior : Send SaveDocumentCommand(Upload)
+  behavior -> validator : ValidateAsync
+  validator -> validator : Length <= 10 MB
+  validator -> sniffer : Detect(first 16 bytes)
+  sniffer --> validator : Jpeg, Png, Heic, Pdf or Unknown
+  alt Over 10 MB or Unknown, whatever the extension (L2-046 AC3)
+    validator --> behavior : Failure on File
+    behavior --> exmw : throw ValidationException
+    exmw --> client : 400 ValidationProblemDetails
+    note over handler, vault : Nothing stored
+  else Valid
+    behavior -> handler : Handle
+    handler -> vault : StoreDocumentAsync (encrypted)
+    handler --> client : 201
+  end
+end
+client --> page : Result
+page --> actor : Error message or green check
+@enduml

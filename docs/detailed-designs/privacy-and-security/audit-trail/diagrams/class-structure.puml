@@ -1,0 +1,82 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Audit trail
+
+enum AuditActor {
+  Agent
+  Parent
+  Reviewer
+  System
+}
+
+class AuditEntry {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid? CaseId
+  +AuditActor Actor
+  +string? ActorId
+  +string Action
+  +string Summary
+  +string? DataSent
+  +string? Recipient
+  +DateTimeOffset At
+}
+
+interface IAuditTrail {
+  +AppendAsync(entry: AuditEntry): Task
+}
+
+class AuditTrail {
+  -IAppDbContext _db
+  -IDateTimeProvider _clock
+}
+
+class AppendOnlyAuditInterceptor <<SaveChangesInterceptor>> {
+  +SavingChangesAsync(eventData, result, ct): ValueTask
+}
+
+class AuditPurgeScope {
+  +Begin(connection): IAsyncDisposable
+}
+
+class GetCaseActivityQuery {
+  +Guid CaseId
+}
+
+class GetCaseActivityQueryHandler {
+  -IAppDbContext _db
+  -ICurrentUser _user
+}
+
+class ActivityItemDto {
+  +DateTimeOffset At
+  +AuditActor Actor
+  +string Summary
+  +string? DataSent
+  +string? Recipient
+}
+
+class ActivityController {
+  +GetActivity(caseId: Guid): Task<IReadOnlyList<ActivityItemDto>>
+}
+
+AuditTrail ..|> IAuditTrail
+AuditTrail ..> AuditEntry : adds
+AuditEntry --> AuditActor
+AppendOnlyAuditInterceptor ..> AuditEntry : guards
+AuditPurgeScope ..> AuditEntry : allows delete only during account purge
+GetCaseActivityQueryHandler ..> GetCaseActivityQuery : handles
+GetCaseActivityQueryHandler ..> ActivityItemDto : returns
+ActivityController ..> GetCaseActivityQuery : sends
+@enduml

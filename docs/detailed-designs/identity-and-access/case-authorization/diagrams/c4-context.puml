@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Case authorization
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(payments, "Payment provider", "Hosted checkout and signed webhooks; card numbers never reach Seedlings")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Reads and changes own cases, children, documents", "HTTPS, bearer token")
+Rel(reviewer, seedlings, "Opens cases in the review queue", "HTTPS, reviewer token")
+Rel(payments, seedlings, "Calls the anonymous webhook", "HTTPS, signed")
+Rel(seedlings, appinsights, "Writes 401 and 404 telemetry, redacted")
+@enduml

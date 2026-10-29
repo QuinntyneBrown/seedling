@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Document retention
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(parent, seedlings, "Chooses how long document photos are kept using")
+Rel(provider, seedlings, "Confirms the RESP account is open to")
+Rel(seedlings, email, "Notifies the parent of deletion via")
+Rel(seedlings, sms, "Notifies the parent of deletion via")
+Rel(seedlings, push, "Notifies the parent of deletion via")
+@enduml

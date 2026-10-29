@@ -1,0 +1,51 @@
+@startuml
+title UML sequence behaviour — Store personal data encrypted at rest
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeStepPage" as page
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveSinCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  participant "DataProtectionFieldProtector" as protector
+  participant "AppDbContext" as ctx
+  database "Seedlings database (TDE)" as db
+  database "Vault schema + Blob Storage" as vstore
+end box
+actor -> page : Enter SIN and continue
+page -> client : Build typed request
+client -> ctrl : PUT over HTTPS (L2-031)
+ctrl -> handler : Send SaveSinCommand
+handler -> vault : StoreSinAsync
+vault -> protector : Protect(SIN, "Seedling.Vault.Sin.v1")
+protector --> vault : Ciphertext
+vault -> vstore : INSERT ciphertext and last 3 digits (TLS, TDE)
+vstore --> vault : Stored
+handler -> ctx : Save non-sensitive intake progress
+ctx -> db : UPDATE over Encrypt=True (TDE encrypts pages at rest)
+db --> ctx : Committed
+handler --> ctrl : Result
+ctrl --> client : 204 with HSTS
+client --> page : Saved
+page --> actor : Show masked SIN
+@enduml

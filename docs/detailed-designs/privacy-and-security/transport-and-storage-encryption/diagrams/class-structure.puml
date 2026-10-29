@@ -1,0 +1,77 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Transport and storage encryption
+
+class Program <<composition root>> {
+  +ConfigureTransportSecurity(builder: WebApplicationBuilder): void
+  +UseTransportSecurity(app: WebApplication): void
+}
+
+class TransportSecurityOptions {
+  +TimeSpan HstsMaxAge
+  +bool IncludeSubDomains
+  +bool Preload
+  +string[] HstsExcludedHosts
+}
+
+class HstsOptions <<ASP.NET Core>> {
+  +TimeSpan MaxAge
+  +bool IncludeSubDomains
+  +bool Preload
+  +IList<string> ExcludedHosts
+}
+
+class HttpsRedirectionOptions <<ASP.NET Core>> {
+  +int RedirectStatusCode
+  +int? HttpsPort
+}
+
+class ExceptionHandlingMiddleware {
+  -RequestDelegate _next
+  -ILogger _logger
+  +InvokeAsync(context: HttpContext): Task
+}
+
+class AppDbContext <<EF Core>> {
+  +SaveChangesAsync(ct: CancellationToken): Task<int>
+}
+
+class SensitiveDataVault {
+  +StoreSinAsync(caseId, subject, sin): Task<string>
+  +StoreDocumentAsync(...): Task<Guid>
+}
+
+interface IFieldProtector {
+  +Protect(plaintext: byte[], purpose: string): byte[]
+  +Unprotect(ciphertext: byte[], purpose: string): byte[]
+}
+
+class DataProtectionFieldProtector {
+  -IDataProtectionProvider _provider
+}
+
+class StaticWebAppConfig <<staticwebapp.config.json>> {
+  +globalHeaders: Strict-Transport-Security
+  +globalHeaders: X-Content-Type-Options
+  +globalHeaders: Referrer-Policy
+}
+
+Program ..> TransportSecurityOptions : binds Seedling:Transport
+Program ..> HstsOptions : configures
+Program ..> HttpsRedirectionOptions : configures
+Program ..> ExceptionHandlingMiddleware : registers after HSTS
+Program ..> AppDbContext : registers (Encrypt=True)
+SensitiveDataVault --> IFieldProtector : encrypts with
+DataProtectionFieldProtector ..|> IFieldProtector
+@enduml

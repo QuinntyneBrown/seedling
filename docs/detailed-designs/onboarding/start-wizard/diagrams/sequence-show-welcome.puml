@@ -1,0 +1,61 @@
+@startuml
+title UML sequence behaviour — Show the welcome screen
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "VerifyCodePage" as verify
+  participant "wizardEntryGuard" as guard
+  participant "WizardWelcomePage" as page
+  participant "WizardStore" as store
+  participant "HttpWizardService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetWizardStateQueryHandler" as handler
+  participant "WizardContextReader" as reader
+  participant "WizardPlanner" as planner
+  participant "WizardStateBuilder" as builder
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> verify : Enter the verification code
+verify -> guard : Navigate to /wizard after verification
+guard -> store : loadState()
+store -> client : getState()
+client -> controller : GET /api/wizard
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send GetWizardStateQuery
+handler -> db : Load WizardProgress for current parent
+db --> handler : None
+handler -> reader : ReadAsync(current parent)
+reader -> db : Children, result shown, existing RESP answer
+db --> reader : No children yet
+reader --> handler : WizardContext
+handler -> planner : Plan(context), one child when none on record
+planner --> handler : WizardPlan (22 steps, 1,320 s)
+handler -> builder : Build(not started, plan)
+builder --> handler : WizardStateDto
+handler --> controller : WizardStateDto
+controller --> client : 200 WizardStateDto
+client --> store : WizardState
+store --> guard : started = false
+guard -> page : Open /wizard/welcome
+page -> page : L2-036 show step count, "About 22 minutes", one Start button
+page --> actor : Welcome screen
+@enduml

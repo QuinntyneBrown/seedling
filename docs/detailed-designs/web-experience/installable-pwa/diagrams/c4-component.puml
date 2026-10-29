@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Installable PWA
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(manifest, "manifest.webmanifest", "Web app manifest", "Name, icons 192/512 and maskable, start URL, standalone, theme colour")
+  Component(ngsw, "ngsw-worker.js + ngsw-config.json", "Angular service worker", "Precaches the app shell, checks for new versions")
+  Component(appupdate, "AppUpdate", "Angular service", "Wraps SwUpdate; exposes updateReady and reload()")
+  Component(install, "PwaInstall", "Angular service", "Defers beforeinstallprompt; exposes canInstall, isStandalone")
+  Component(shell, "App (app-root)", "Angular component", "Application shell; shows the update banner")
+  Component(landing, "LandingPage (app-landing)", "Angular page", "Shows the install offer")
+  Component(banner, "sl-banner (Banner)", "Design-system component", "Offline and update banners")
+  Component(prompt, "sl-install-prompt (InstallPrompt)", "Design-system component", "The .install region from landing.html")
+}
+Rel(parent, landing, "Chooses Install or Not now")
+Rel(parent, shell, "Chooses Reload")
+Rel(shell, appupdate, "Reads updateReady, calls reload()")
+Rel(shell, banner, "Renders")
+Rel(landing, install, "Reads canInstall, calls install() / dismiss()")
+Rel(landing, prompt, "Renders")
+Rel(appupdate, ngsw, "checkForUpdate, activateUpdate", "SwUpdate")
+Rel(install, manifest, "Browser validates before raising beforeinstallprompt")
+@enduml

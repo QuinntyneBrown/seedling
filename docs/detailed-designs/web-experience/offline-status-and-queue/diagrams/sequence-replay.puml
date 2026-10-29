@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Replay the outbox on reconnect
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Connectivity" as conn
+  participant "OutboxReplayer" as replayer
+  participant "IndexedDbOutbox" as outbox
+  participant "CachingCasesService" as cases
+  participant "App shell" as shell
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Intake and documents controllers" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "Save and upload handlers" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+conn -> controller : GET /api/_ping
+controller --> conn : 200 ok
+conn -> replayer : online = true
+replayer -> outbox : pending() ordered by seq
+outbox --> replayer : Items 1..n
+loop Each item in seq order (L2-003 criterion 3)
+  replayer -> outbox : state = Sending
+  replayer -> controller : method + path, body, Idempotency-Key: id
+  alt 2xx
+    controller -> handler : Send command
+    handler -> db : Upsert step or store upload; repeat key returns existing
+    db --> handler : Committed
+    handler --> controller : Result
+    controller --> replayer : 2xx
+    replayer -> outbox : remove(id)
+  else Network error or 5xx
+    controller --> replayer : Failure
+    replayer -> outbox : state = Pending
+    replayer -> replayer : Stop run; keep order for next trigger
+  else 4xx ProblemDetails
+    controller --> replayer : 400 ProblemDetails
+    replayer -> outbox : markFailed(id, title and detail)
+    replayer -> shell : Show item name and reason with Try again (L2-003 criterion 4)
+  end
+end
+replayer -> cases : list() refresh
+cases --> shell : Status updated without parent action
+opt Parent retries a failed item
+  actor -> shell : Try again
+  shell -> outbox : retry(id): state = Pending
+  shell -> replayer : run()
+end
+@enduml

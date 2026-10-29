@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Case status dashboard
+
+Container(pwa, "Seedlings PWA", "Angular 21", "DashboardPage and CasePage via CASES_SERVICE")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "CasesController", "ASP.NET Core controller", "GET cases, GET case")
+  Component(list, "ListCasesQueryHandler", "MediatR handler", "Summaries for the current parent")
+  Component(detail, "GetCaseQueryHandler", "MediatR handler", "Detail with attention item first")
+  Component(presenter, "CaseStatusPresenter", "Application service", "Status to label, explanation, next action")
+  Component(transitions, "CaseStatusTransitions", "Domain service", "Allowed status moves")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "RespCase, ReviewItem, AttentionItem, Submission, AuditEntry")
+}
+Container(features, "Other case-agent handlers", "MediatR handlers in the Seedlings API", "Move the status")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, list, "Sends ListCasesQuery")
+Rel(ctrl, detail, "Sends GetCaseQuery")
+Rel(list, presenter, "Present")
+Rel(detail, presenter, "Present")
+Rel(list, db, "Reads projections", "EF Core")
+Rel(detail, db, "Reads", "EF Core")
+Rel(features, transitions, "RespCase.TransitionTo")
+@enduml

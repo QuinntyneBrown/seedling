@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Show the last known status offline
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "DashboardPage" as page
+  participant "CachingCasesService" as cases
+  participant "HttpCasesService" as http
+  database "Device store (IndexedDB)" as idb
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as controller
+end box
+actor -> page : Open Home
+page -> cases : list()
+cases -> idb : readSnapshot(parentAccountId)
+idb --> cases : CaseSnapshot with fetchedAt
+cases --> page : Cases, source = device, lastUpdatedAt
+page --> actor : Each case status with "last updated" time within 2 s (L2-003 criterion 1)
+cases -> http : list()
+alt Online
+  http -> controller : GET case list
+  controller --> http : 200 CaseSummary[]
+  http --> cases : Cases
+  cases -> idb : writeSnapshot(cases, fetchedAt = now)
+  cases --> page : Cases, source = network
+  page --> actor : Fresh status
+else Offline or API unreachable
+  http --> cases : Network error
+  cases --> page : Keep device result
+  page --> actor : Offline banner stays; statuses keep their "last updated" time
+end
+@enduml

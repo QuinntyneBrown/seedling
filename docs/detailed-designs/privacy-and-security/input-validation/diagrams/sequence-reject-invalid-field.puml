@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Reject an invalid SIN or postal code
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ExceptionHandlingMiddleware" as exmw
+  participant "IntakeController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ValidationBehavior" as behavior
+  participant "SaveSinCommandValidator" as validator
+  participant "SaveSinCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Sensitive data vault" as vault
+end box
+actor -> page : Enter SIN and continue
+page -> page : sinValidator (advisory, same rules)
+page -> client : saveSin(caseId, subject, sin)
+client -> exmw : PUT /api/cases/{caseId}/sin
+exmw -> ctrl : Next
+ctrl -> behavior : Send SaveSinCommand
+behavior -> validator : ValidateAsync
+validator -> validator : Strip spaces and hyphens; 9 digits; Luhn
+alt Fails (L2-046 AC1)
+  validator --> behavior : Failure on Sin
+  behavior --> exmw : throw ValidationException
+  exmw --> client : 400 ValidationProblemDetails {errors: {Sin: [...]}}
+  client --> page : Field error
+  page --> actor : Show message under the field
+  note over handler, vault : Handler never runs; nothing stored
+else Passes
+  behavior -> handler : Handle
+  handler -> vault : StoreSinAsync
+  handler --> client : 204
+end
+note over validator : Postal codes follow the same path through SaveIntakeFieldCommandValidator (L2-046 AC2)
+@enduml

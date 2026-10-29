@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Go back a step
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardChildrenPage" as current
+  participant "WizardStore" as store
+  participant "WizardNamePage" as previous
+  participant "HttpWizardService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetWizardStepAnswerQueryHandler" as handler
+  participant "NameStep" as namestep
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> current : Tap Back
+current -> store : previousRoute("children")
+store --> current : /wizard/name
+current -> previous : Navigate (no data change)
+previous -> client : getAnswer("name")
+client -> controller : GET /api/wizard/steps/name
+controller -> handler : Send GetWizardStepAnswerQuery
+handler -> namestep : ReadAsync(context)
+namestep -> db : Read ParentAccount names
+db --> namestep : Jordan, Lee
+namestep --> handler : Saved answer
+handler --> controller : StepAnswerDto
+controller --> client : 200 { answer }
+client --> previous : Saved answer
+previous --> actor : Name screen with saved answer
+opt Parent changes the answer and taps Continue
+  previous -> store : answer("name", changed)
+  store -> client : PUT /api/wizard/steps/name
+  client --> store : WizardState, CurrentStepKey unchanged ("children")
+  store -> current : Navigate back to the furthest step
+end
+@enduml

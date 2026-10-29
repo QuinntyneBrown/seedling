@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Run Lighthouse against the dashboard
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "GitHub Actions CI (lighthouse job)" as actor
+box "Frontend — Seedlings PWA under test" #E0F2FE
+  participant "Lighthouse CI" as lhci
+  participant "sign-in.cjs (puppeteerScript)" as signin
+  participant "Static server + /api proxy" as server
+  participant "Seedlings PWA (production build)" as pwa
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "E2E API (Start-E2eApi.ps1, SQLite, seeded)" as api
+end box
+actor -> lhci : npm run lighthouse
+lhci -> signin : Run before collection
+signin -> pwa : Sign in as a seeded parent
+pwa -> api : Sign-in requests
+api --> pwa : Session established
+loop numberOfRuns = 3
+  lhci -> lhci : Reset storage: caches, IndexedDB, service workers (cookies kept)
+  lhci -> server : Load dashboard, Moto G Power emulation, simulated 4G throttling
+  server --> lhci : Shell and initial chunks
+  pwa -> api : Case list
+  api --> pwa : Cases
+  lhci -> lhci : Record interactive and performance score
+end
+lhci -> lhci : Take the median run
+alt interactive <= 4000 ms and score >= 0.8
+  lhci --> actor : Pass (L2-006 criterion 2)
+else Either assertion fails
+  lhci --> actor : Exit non-zero; workflow fails
+end
+@enduml

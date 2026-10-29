@@ -1,0 +1,118 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Check eligibility
+
+enum IncomeBand {
+  UnderFirstBoundary
+  FirstToSecond
+  SecondToThird
+  OverThird
+  NotSure
+}
+
+enum YesNoNotSure {
+  Yes
+  No
+  NotSure
+}
+
+class EligibilityAnswers {
+  +Guid Id
+  +Guid ParentAccountId
+  +string? Province
+  +IncomeBand? IncomeBand
+  +int? ChildrenInHousehold
+  +YesNoNotSure? CcbStatus
+  +YesNoNotSure? ExistingResp
+  +DateTimeOffset UpdatedAt
+  +Set(questionKey: string, value: string): void
+  +UnansweredKeys(): IReadOnlyList<string>
+}
+
+class EligibilityResult {
+  +Guid CaseId
+  +bool QualifiesForClb
+  +decimal? ClbEstimate
+  +bool QualifiesForCesg
+  +decimal CesgExample
+  +string RatesTableVersion
+  +DateTimeOffset CalculatedAt
+  +DateTimeOffset? ShownAt
+  +MarkShown(now: DateTimeOffset): bool
+}
+
+class Child {
+  +Guid Id
+  +DateOnly DateOfBirth
+}
+
+class RespCase {
+  +Guid Id
+  +CaseStatus Status
+  +MoveToCollectingDocuments(now: DateTimeOffset): void
+}
+
+class EligibilityCalculator {
+  +int FirstClbBirthYear = 2004
+  +Evaluate(answers: EligibilityAnswers, child: Child, rates: GrantRatesTable, today: DateOnly): EligibilityOutcome
+}
+
+class GrantRatesTable {
+  +string Version
+  +DateOnly EffectiveFrom
+  +IReadOnlyDictionary<int, decimal> ClbThresholdByChildren
+  +decimal ClbFirstPayment
+  +decimal ClbYearlyPayment
+  +int ClbLastEligibleAge
+  +decimal ClbLifetimeMaximum
+  +decimal CesgBasicRate = 0.20
+  +decimal CesgExampleContribution
+  +decimal CesgLifetimeMaximum
+}
+
+interface IGrantRatesProvider {
+  +GetInForceAsync(on: DateOnly): Task<GrantRatesTable>
+}
+
+class EvaluateEligibilityCommandHandler {
+  +Handle(command: EvaluateEligibilityCommand): Task<EligibilityResultDto>
+}
+
+class MarkEligibilityResultShownCommandHandler {
+  +Handle(command: MarkEligibilityResultShownCommand): Task
+}
+
+interface IRequiresEligibilityShown {
+  +Guid CaseId
+}
+
+class "EligibilityGateBehavior<TRequest, TResponse>" as EligibilityGateBehavior {
+  +Handle(request: TRequest, next): Task<TResponse>
+}
+
+EligibilityAnswers --> IncomeBand : has
+EligibilityAnswers --> YesNoNotSure : has
+RespCase "1" *-- "0..1" EligibilityResult : owns
+EvaluateEligibilityCommandHandler --> EligibilityAnswers : loads
+EvaluateEligibilityCommandHandler --> EligibilityCalculator : computes with
+EvaluateEligibilityCommandHandler --> IGrantRatesProvider : reads
+EvaluateEligibilityCommandHandler ..> EligibilityResult : upserts
+EligibilityCalculator ..> GrantRatesTable : reads
+EligibilityCalculator ..> Child : reads birth year
+IGrantRatesProvider ..> GrantRatesTable : returns
+MarkEligibilityResultShownCommandHandler --> EligibilityResult : sets ShownAt
+MarkEligibilityResultShownCommandHandler --> RespCase : moves status
+EligibilityGateBehavior ..> IRequiresEligibilityShown : intercepts
+EligibilityGateBehavior ..> EligibilityResult : checks ShownAt
+@enduml

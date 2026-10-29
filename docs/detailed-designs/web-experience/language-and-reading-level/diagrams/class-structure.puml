@@ -1,0 +1,89 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Language and reading level
+
+package "Frontend — Seedlings PWA" {
+  class I18nStore <<injectable>> {
+    +language: Signal<UiLanguage>
+    +locale: Signal<"en-CA" | "fr-CA">
+    -catalog: Map<string, string>
+    +t(key: string, params?: Record<string, unknown>): string
+    +use(language: UiLanguage): Promise<void>
+    +resolveInitial(account?: AccountLanguage): UiLanguage
+  }
+  class TranslatePipe <<pipe t, impure>> {
+    +transform(key: string, params?: object): string
+  }
+  class LanguageHeaderInterceptor <<HttpInterceptorFn>>
+  interface AccountService {
+    +changeLanguage(language: UiLanguage): Observable<void>
+  }
+  class HttpAccountService
+  class SettingsPage <<component app-settings>> {
+    +choose(language: UiLanguage): void
+  }
+  enum UiLanguage {
+    En
+    Fr
+  }
+}
+
+package "Backend — Seedlings API" {
+  class AccountController {
+    +ChangeLanguage(request: ChangeLanguageRequest): Task<IActionResult>
+  }
+  class ChangeLanguageCommand {
+    +Language Language
+  }
+  class ChangeLanguageCommandValidator {
+    +RuleFor(Language).IsInEnum()
+  }
+  class ChangeLanguageCommandHandler {
+    +Handle(command: ChangeLanguageCommand): Task
+  }
+  class ParentAccount {
+    +Guid Id
+    +string DisplayName
+    +Language Language
+    +ContactChannel ContactChannel
+    +ChangeLanguage(language: Language): void
+  }
+  enum Language {
+    En
+    Fr
+  }
+  interface IAppDbContext {
+    +DbSet<ParentAccount> ParentAccounts
+    +SaveChangesAsync(): Task<int>
+  }
+  interface INotificationDispatcher {
+    +SendAsync(parentAccountId: Guid, kind: NotificationKind, model: object): Task
+  }
+}
+
+TranslatePipe ..> I18nStore : reads
+LanguageHeaderInterceptor ..> I18nStore : reads locale
+SettingsPage --> I18nStore : use()
+SettingsPage --> AccountService : changeLanguage()
+AccountService <|.. HttpAccountService
+I18nStore --> UiLanguage
+AccountController ..> ChangeLanguageCommand : sends
+ChangeLanguageCommandValidator ..> ChangeLanguageCommand : validates
+ChangeLanguageCommandHandler ..> ChangeLanguageCommand : handles
+ChangeLanguageCommandHandler --> IAppDbContext : loads and saves
+ChangeLanguageCommandHandler --> ParentAccount : mutates
+ParentAccount --> Language
+INotificationDispatcher ..> ParentAccount : reads Language
+HttpAccountService ..> AccountController : PUT /api/account/language
+@enduml

@@ -1,0 +1,35 @@
+@startuml
+title UML sequence behaviour — Reject a change to an audit entry
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Any caller" as actor
+box "Backend — Seedlings API application" #D1FADF
+  participant "Routing" as routing
+  participant "ExceptionHandlingMiddleware" as exmw
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "AppDbContext" as ctx
+  participant "AppendOnlyAuditInterceptor" as guard
+  database "Seedlings database" as db
+end box
+actor -> routing : PUT, PATCH or DELETE /api/cases/{caseId}/activity/{id}
+routing --> actor : 405 Method Not Allowed; no handler exists (L2-035 AC2)
+note over ctx : Defence in depth for code paths
+ctx -> guard : SavingChangesAsync with Modified or Deleted AuditEntry
+guard --> exmw : InvalidOperationException; nothing saved
+exmw --> actor : 500 ProblemDetails, logged
+ctx -> db : UPDATE or DELETE audit.AuditEntries outside a purge scope
+db --> ctx : TR_AuditEntries_AppendOnly raises error; rolled back
+@enduml

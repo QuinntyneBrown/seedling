@@ -1,0 +1,137 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Start the onboarding wizard
+
+enum RoadmapGroup {
+  GettingStarted
+  YourDetails
+  ReviewAndSend
+}
+
+class WizardStepDefinition <<record>> {
+  +string Key
+  +RoadmapGroup Group
+  +string LabelKey
+  +string Route
+  +int StandardSeconds
+  +bool PerChild
+}
+
+class WizardStepCatalog {
+  +IReadOnlyList<WizardStepDefinition> Steps
+  +WizardStepDefinition Find(key: string)
+}
+
+class WizardContext <<record>> {
+  +IReadOnlyList<ChildRef> Children
+  +bool EligibilityResultShown
+  +bool? HasExistingResp
+}
+
+class PlannedStep <<record>> {
+  +string StepKey
+  +string CatalogKey
+  +Guid? ChildId
+  +string Label
+  +RoadmapGroup Group
+  +int StandardSeconds
+}
+
+class WizardPlan {
+  +IReadOnlyList<PlannedStep> Steps
+  +int TotalStandardSeconds
+  +int IndexOf(stepKey: string)
+  +PlannedStep NextAfter(stepKey: string)
+  +RoadmapGroup GroupOf(stepKey: string)
+}
+
+class WizardPlanner {
+  +WizardPlan Plan(context: WizardContext)
+}
+
+class WizardProgress {
+  +Guid ParentAccountId
+  +string CurrentStepKey
+  +ISet<string> CompletedSteps
+  +DateTimeOffset StartedAt
+  +int ElapsedSeconds
+  +DateTimeOffset LastActiveAt
+  +DateTimeOffset? ReminderSentAt
+  +DateTimeOffset? FinishedAt
+  +byte[] RowVersion
+  +{static} WizardProgress Start(parentId: Guid, firstStepKey: string, now: DateTimeOffset)
+  +void Finish(now: DateTimeOffset)
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +void MoveTo(status: CaseStatus, now: DateTimeOffset)
+}
+
+class WizardController {
+  +Get(): Task<WizardStateDto>
+  +Start(): Task<WizardStateDto>
+  +Finish(): Task<WizardStateDto>
+}
+
+class GetWizardStateQueryHandler {
+  +Handle(query: GetWizardStateQuery): Task<WizardStateDto>
+}
+
+class StartWizardCommandHandler {
+  +Handle(command: StartWizardCommand): Task<WizardStateDto>
+}
+
+class FinishWizardCommandHandler {
+  +Handle(command: FinishWizardCommand): Task<WizardStateDto>
+}
+
+class WizardContextReader {
+  +ReadAsync(parentId: Guid): Task<WizardContext>
+}
+
+class WizardStateBuilder {
+  +WizardStateDto Build(progress: WizardProgress, plan: WizardPlan)
+}
+
+class WizardStateDto <<record>> {
+  +bool Started
+  +DateTimeOffset? FinishedAt
+  +string CurrentStepKey
+  +int TotalSteps
+  +int TotalStandardSeconds
+  +IReadOnlyList<RoadmapGroupDto> Groups
+  +RoadmapTimeDto Time
+}
+
+WizardStepCatalog "1" *-- "22" WizardStepDefinition : orders
+WizardStepDefinition --> RoadmapGroup : in
+WizardPlanner ..> WizardStepCatalog : reads
+WizardPlanner ..> WizardContext : uses
+WizardPlanner ..> WizardPlan : creates
+WizardPlan "1" *-- "*" PlannedStep : holds
+PlannedStep --> RoadmapGroup : in
+WizardController ..> GetWizardStateQueryHandler : sends query
+WizardController ..> StartWizardCommandHandler : sends command
+WizardController ..> FinishWizardCommandHandler : sends command
+GetWizardStateQueryHandler ..> WizardContextReader : uses
+GetWizardStateQueryHandler ..> WizardPlanner : uses
+GetWizardStateQueryHandler ..> WizardStateBuilder : uses
+StartWizardCommandHandler --> WizardProgress : creates once
+FinishWizardCommandHandler --> WizardProgress : finishes
+FinishWizardCommandHandler --> RespCase : CheckingEligibility to CollectingDocuments
+WizardStateBuilder ..> WizardStateDto : builds
+@enduml

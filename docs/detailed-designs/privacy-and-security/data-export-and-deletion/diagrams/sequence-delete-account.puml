@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Request account deletion
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "PrivacyPage" as page
+  participant "DeleteAccountDialog" as dialog
+  participant "reauthenticationInterceptor" as icpt
+  participant "HttpPrivacyService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DataRequestsController" as ctrl
+  participant "RecentAuthenticationHandler" as policy
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RequestAccountDeletionCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SessionRevoker" as sessions
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Delete my account
+page -> dialog : Open CDK dialog
+actor -> dialog : Confirm
+dialog -> client : requestDeletion()
+client -> ctrl : POST /api/me/data-requests/deletion {confirmed: true}
+ctrl -> policy : Evaluate RecentAuthentication
+opt auth_time older than 5 minutes (L2-034 AC3)
+  ctrl --> icpt : 403 reauthentication_required
+  icpt -> icpt : Open ReauthenticateDialog, confirm code, retry
+  icpt -> ctrl : POST /api/me/data-requests/deletion
+end
+ctrl -> handler : Send RequestAccountDeletionCommand
+handler -> db : Insert DataRequest(Delete, DueAt = now + 30 days) or return open one
+handler -> db : Set ParentAccount.DeletionRequestedAt
+handler -> sessions : Revoke every RefreshToken family
+handler -> db : SaveChangesAsync
+handler --> ctrl : DataRequestDto
+ctrl --> client : 202 Accepted
+client --> dialog : Accepted
+dialog --> actor : Signed out; deletion scheduled
+@enduml

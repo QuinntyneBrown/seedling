@@ -1,0 +1,38 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Approve and submit
+
+Container(pwa, "Seedlings PWA", "Angular 21", "ApprovePage and SubmittedPage via CASE_APPROVAL_SERVICE")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ApprovalsController", "ASP.NET Core controller", "approval-summary, approvals, submissions")
+  Component(summary, "GetApprovalSummaryQueryHandler", "MediatR handler", "What goes to whom, with hash")
+  Component(record, "RecordApprovalCommandHandler", "MediatR handler", "Records Approved or Declined")
+  Component(submit, "SubmitApplicationCommandHandler", "MediatR handler", "Builds the package and sends")
+  Component(snapshot, "CaseDataSnapshotBuilder", "Application service", "Canonical snapshot and SHA-256 hash")
+  Component(gate, "ApprovalGate", "Domain service", "Latest approval matches current hash")
+  Component(gated, "ApprovalGatedProviderGateway", "IProviderGateway decorator", "Re-checks the gate before any send")
+  Component(adapter, "Provider adapter", "IProviderGateway implementation", "Protocol <TO SUPPLY>")
+  Component(audit, "IAuditTrail", "Application service", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Approval, Submission, RespCase, AuditEntry")
+}
+System_Ext(provider, "RESP provider", "Opens accounts")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, summary, "Sends GetApprovalSummaryQuery")
+Rel(ctrl, record, "Sends RecordApprovalCommand")
+Rel(ctrl, submit, "Sends SubmitApplicationCommand (retry)")
+Rel(summary, snapshot, "Builds snapshot")
+Rel(record, snapshot, "Recomputes hash")
+Rel(record, submit, "Sends SubmitApplicationCommand")
+Rel(submit, snapshot, "Recomputes hash")
+Rel(submit, gate, "EnsureApproved")
+Rel(submit, gated, "SubmitApplicationAsync")
+Rel(gated, gate, "EnsureApproved")
+Rel(gated, adapter, "Delegates")
+Rel(adapter, provider, "Sends", "Protocol <TO SUPPLY>")
+Rel(record, audit, "Appends ApprovalRecorded or ApprovalDeclined")
+Rel(submit, audit, "Appends ApplicationSubmitted per target")
+Rel(record, db, "Writes", "EF Core")
+Rel(submit, db, "Writes", "EF Core")
+@enduml

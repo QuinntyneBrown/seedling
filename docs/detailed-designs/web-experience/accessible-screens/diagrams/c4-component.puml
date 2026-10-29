@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Accessible screens
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(shell, "App (app-root)", "Angular component", "Skip link, header, nav, main#main")
+  Component(title, "SeedlingsTitleStrategy", "TitleStrategy", "<screen> — Seedlings")
+  Component(focus, "RouteFocus", "Angular service", "Focuses h1 on NavigationEnd")
+  Component(page, "Form pages", "Angular pages", "Sign-up, wizard, intake")
+  Component(errfocus, "FormErrorFocus", "Angular helper", "Focuses first invalid; announces count")
+  Component(fields, "sl-text-field, sl-select, sl-choice-group", "Design-system components", "aria-invalid, aria-describedby, aria-live error")
+  Component(global, "_global.scss", "Design-system foundations", ":focus-visible ring, scroll-padding, rem type")
+}
+Container_Boundary(e2e, "Playwright suite (e2e/)") {
+  Component(a11y, "expectNoAxeViolations", "Fixture (a11y.ts)", "axe-core with wcag2a..wcag22aa tags")
+  Component(specs, "accessibility, keyboard, field-errors, text-zoom specs", "Playwright specs", "Run on every parent-facing route")
+}
+Rel(shell, title, "Uses")
+Rel(shell, focus, "Uses")
+Rel(page, fields, "Renders with label, hint, error")
+Rel(page, errfocus, "Calls on invalid submit")
+Rel(fields, global, "Styled by")
+Rel(specs, a11y, "Calls")
+Rel(specs, shell, "Drives", "Chromium")
+@enduml

@@ -1,0 +1,116 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Approve and submit
+
+enum ApprovalDecision {
+  Approved
+  Declined
+}
+
+enum SubmissionTarget {
+  Provider
+  Esdc
+}
+
+class RespCase {
+  +Guid Id
+  +CaseStatus Status
+  +string CurrentStepKey
+  +DateTimeOffset? PausedAt
+  +Pause(at: DateTimeOffset): void
+  +MarkSubmitted(at: DateTimeOffset): void
+  +MarkReadyToApprove(at: DateTimeOffset): void
+}
+
+class Approval {
+  +Guid Id
+  +Guid CaseId
+  +ApprovalDecision Decision
+  +DateTimeOffset ApprovedAt
+  +string DataSnapshotHash
+  +string SharedDataJson
+}
+
+class Submission {
+  +Guid Id
+  +Guid CaseId
+  +Guid ApprovalId
+  +SubmissionTarget Target
+  +string Via
+  +DateTimeOffset SubmittedAt
+  +string? ExternalReference
+  +DateTimeOffset? ConfirmedAt
+  +DateTimeOffset? FlaggedAt
+}
+
+class CaseDataSnapshot {
+  +IReadOnlyList<RecipientItems> Recipients
+  +string Hash
+  +ToManifestJson(): string
+}
+
+class CaseDataSnapshotBuilder {
+  +BuildAsync(caseId: Guid): Task<CaseDataSnapshot>
+}
+
+class ApprovalGate {
+  +EnsureApproved(case: RespCase, approvals: IReadOnlyList<Approval>, currentHash: string): Approval
+}
+
+class RecordApprovalCommand {
+  +Guid CaseId
+  +ApprovalDecision Decision
+  +string SnapshotHash
+  +bool Attested
+}
+
+class RecordApprovalCommandHandler {
+  +Handle(command: RecordApprovalCommand): Task<ApprovalResultDto>
+}
+
+class SubmitApplicationCommandHandler {
+  +Handle(command: SubmitApplicationCommand): Task<IReadOnlyList<SubmissionDto>>
+}
+
+interface IProviderGateway {
+  +SubmitApplicationAsync(package: SubmissionPackage): Task<ProviderReceipt>
+}
+
+class ApprovalGatedProviderGateway {
+  -IProviderGateway inner
+}
+
+class SubmissionPackage {
+  +Guid CaseId
+  +Guid ApprovalId
+  +IReadOnlyList<FormPayload> Forms
+  +IReadOnlyList<DocumentPayload> Documents
+}
+
+RespCase "1" *-- "*" Approval : records
+RespCase "1" *-- "*" Submission : records
+Submission "*" --> "1" Approval : allowed by
+Approval --> ApprovalDecision
+Submission --> SubmissionTarget
+CaseDataSnapshotBuilder ..> CaseDataSnapshot : creates
+RecordApprovalCommandHandler ..> RecordApprovalCommand : handles
+RecordApprovalCommandHandler --> CaseDataSnapshotBuilder
+RecordApprovalCommandHandler ..> SubmitApplicationCommandHandler : sends command
+SubmitApplicationCommandHandler --> CaseDataSnapshotBuilder
+SubmitApplicationCommandHandler --> ApprovalGate
+SubmitApplicationCommandHandler --> IProviderGateway
+SubmitApplicationCommandHandler ..> SubmissionPackage : builds
+ApprovalGatedProviderGateway ..|> IProviderGateway
+ApprovalGatedProviderGateway --> ApprovalGate
+@enduml

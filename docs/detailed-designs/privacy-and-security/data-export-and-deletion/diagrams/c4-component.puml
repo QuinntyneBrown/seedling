@@ -1,0 +1,38 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Data export and deletion
+
+Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "DataRequestsController", "ASP.NET Core controller", "/api/me/data-requests")
+  Component(policy, "RecentAuthenticationHandler", "Authorization handler", "auth_time within 5 minutes")
+  Component(reqExport, "RequestDataExportCommandHandler", "MediatR handler", "Creates or returns the open export request")
+  Component(reqDelete, "RequestAccountDeletionCommandHandler", "MediatR handler", "Creates request, revokes sessions")
+  Component(download, "DownloadDataExportQueryHandler", "MediatR handler", "Streams a ready export to its owner")
+}
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "DataRequestJob", "Hosted service / triggered WebJob", "Processes pending DataRequest rows")
+  Component(exporter, "PersonalDataExporter", "Infrastructure service", "Collects every personal record into JSON")
+  Component(purger, "AccountPurger", "Infrastructure service", "Deletes every personal record for one account")
+  Component(notify, "INotificationDispatcher", "Application port", "Link and confirmation messages")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs, documents, export archives")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, policy, "Export and delete require RecentAuthentication")
+Rel(ctrl, reqExport, "Sends RequestDataExportCommand")
+Rel(ctrl, reqDelete, "Sends RequestAccountDeletionCommand")
+Rel(ctrl, download, "Sends DownloadDataExportQuery")
+Rel(reqExport, db, "Inserts DataRequest")
+Rel(reqDelete, db, "Inserts DataRequest, revokes RefreshToken families")
+Rel(job, exporter, "Export requests")
+Rel(job, purger, "Delete requests")
+Rel(exporter, db, "Reads")
+Rel(exporter, vault, "Reads (ExportData) and writes archive")
+Rel(purger, db, "Deletes")
+Rel(purger, vault, "Deletes")
+Rel(job, notify, "Sends link or confirmation")
+Rel(download, vault, "Reads archive")
+@enduml

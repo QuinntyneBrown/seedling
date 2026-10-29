@@ -1,0 +1,91 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Installable PWA
+
+class SwUpdate <<Angular>> {
+  +isEnabled: boolean
+  +versionUpdates: Observable<VersionEvent>
+  +unrecoverable: Observable<UnrecoverableStateEvent>
+  +checkForUpdate(): Promise<boolean>
+  +activateUpdate(): Promise<boolean>
+}
+
+class AppUpdate <<injectable>> {
+  +updateReady: Signal<boolean>
+  +unrecoverable: Signal<boolean>
+  +start(): void
+  +reload(): Promise<void>
+  -onVisibilityChange(): void
+}
+
+class PwaInstall <<injectable>> {
+  -deferred: BeforeInstallPromptEvent | null
+  +canInstall: Signal<boolean>
+  +isStandalone: Signal<boolean>
+  +install(): Promise<InstallOutcome>
+  +dismiss(): void
+}
+
+class BeforeInstallPromptEvent <<browser>> {
+  +prompt(): Promise<void>
+  +userChoice: Promise<ChoiceResult>
+}
+
+enum InstallOutcome {
+  Accepted
+  Dismissed
+  Unavailable
+}
+
+class App <<component app-root>> {
+  #update: AppUpdate
+}
+
+class LandingPage <<component app-landing>> {
+  #install: PwaInstall
+  #showInstall: Signal<boolean>
+}
+
+class Banner <<component sl-banner>> {
+  +variant: InputSignal<BannerVariant>
+  +action: OutputEmitterRef<void>
+}
+
+class InstallPrompt <<component sl-install-prompt>> {
+  +title: InputSignal<string>
+  +text: InputSignal<string>
+  +installLabel: InputSignal<string>
+  +dismissLabel: InputSignal<string>
+  +install: OutputEmitterRef<void>
+  +dismiss: OutputEmitterRef<void>
+}
+
+class WebAppManifest <<manifest.webmanifest>> {
+  +name: "Seedlings"
+  +short_name: "Seedlings"
+  +start_url: "/"
+  +display: "standalone"
+  +theme_color: "#123b2a"
+  +icons: Icon[]
+}
+
+AppUpdate ..> SwUpdate : uses
+PwaInstall o-- "0..1" BeforeInstallPromptEvent : defers
+PwaInstall ..> InstallOutcome : returns
+App --> AppUpdate : injects
+App ..> Banner : renders
+LandingPage --> PwaInstall : injects
+LandingPage ..> InstallPrompt : renders
+BeforeInstallPromptEvent ..> WebAppManifest : raised only when valid
+@enduml

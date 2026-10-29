@@ -1,0 +1,33 @@
+@startuml
+title UML sequence behaviour — Size touch targets
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser layout engine" as browser
+  participant "Screen (any page)" as page
+  participant "Design-system components (.btn, .choice, .segments__tab, nav items)" as comp
+end box
+actor -> browser : Open a screen on a touch phone below 576 px
+browser -> browser : Match (pointer: coarse)
+browser -> comp : Apply min-inline-size and min-block-size var(--sl-target-min) = 44px
+comp --> browser : Each control at least 44 x 44 px (L2-005 criterion 1)
+browser -> page : Lay out .cluster and .actions with gap >= --spacingS
+page --> browser : Adjacent target boxes do not intersect (L2-005 criterion 2)
+browser --> actor : Every control tappable without hitting its neighbour
+opt Fine pointer (mouse, trackpad)
+  browser -> comp : Keep the mock's desktop sizes
+end
+@enduml
