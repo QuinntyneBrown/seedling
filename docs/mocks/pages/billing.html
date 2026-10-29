@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plan and billing — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="billing" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./dashboard.html">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html" aria-current="page">Settings</a>
+    </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <div class="narrow">
+  <a class="back-link" href="./settings.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Settings</a>
+  <h1 class="page-header__title">Plan and billing</h1>
+  <section class="card mt-xl" aria-labelledby="plan-title">
+    <p class="card__eyebrow">Current plan</p>
+    <h2 class="card__title" id="plan-title">One-time</h2>
+    <p class="card__body">Paid $44.07 on 14 July 2026. Covers Maya and Theo until both claims are done.</p>
+    <div class="card__foot cluster"><a class="btn btn--secondary btn--s" href="./plan.html">Switch to Annual</a></div>
+  </section>
+  <section class="card mt-l" aria-labelledby="rec-title">
+    <h2 class="section-title" id="rec-title">Receipts</h2>
+    <ul class="rows">
+      <li class="row"><div class="row__main"><span class="row__value">14 Jul 2026 · One-time plan</span><span class="row__label">Visa ending 4242</span></div><span class="cluster"><span class="tabular">$44.07</span><a class="btn btn--quiet btn--s" href="./billing.html" aria-label="Download receipt for 14 July 2026"><svg class="icon icon--s" aria-hidden="true"><use href="#i-download"/></svg>PDF</a></span></li>
+    </ul>
+  </section>
+  <section class="card mt-l" aria-labelledby="cancel-title">
+    <h2 class="section-title" id="cancel-title">Cancel</h2>
+    <p class="small">A one-time plan has nothing to renew. If you cancel before we send a claim, we refund you in full. Grants already paid stay in the RESP.</p>
+    <div class="actions actions--start"><button class="btn btn--danger-outline" type="button">Cancel and refund</button></div>
+  </section>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html" aria-current="page"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

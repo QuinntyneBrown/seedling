@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enter your code — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="verify-code" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="auth" aria-labelledby="auth-title">
+  <a class="back-link" href="./sign-up.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Change email</a>
+  <h1 class="auth__title" id="auth-title">Check your email</h1>
+  <p class="auth__lede">We sent a 6-digit code to <strong>jordan.lee@example.ca</strong>. It works for 10 minutes.</p>
+  <div class="auth__body">
+    <fieldset class="field">
+      <legend class="field__label">Your code</legend>
+      <div class="otp"><input class="otp__digit otp__digit--filled" type="text" inputmode="numeric" maxlength="1" value="4" aria-label="Digit 1 of 6"><input class="otp__digit otp__digit--filled" type="text" inputmode="numeric" maxlength="1" value="8" aria-label="Digit 2 of 6"><input class="otp__digit otp__digit--filled" type="text" inputmode="numeric" maxlength="1" value="2" aria-label="Digit 3 of 6"><input class="otp__digit otp__digit--filled" type="text" inputmode="numeric" maxlength="1" value="9" aria-label="Digit 4 of 6"><input class="otp__digit otp__digit--current" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5 of 6"><input class="otp__digit" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6 of 6"></div>
+    </fieldset>
+    <a class="btn btn--primary btn--block" href="./wizard.name.html">Continue</a>
+    <p class="small muted center">Didn’t get it? Check your junk folder, or <button class="link" type="button">send a new code</button> in 0:42.</p>
+  </div>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

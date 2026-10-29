@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your children — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="wizard" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./dashboard.html">Finish later</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<div class="flow">
+  <div class="roadmap-bar">
+    <p class="roadmap-bar__step">Step 3 of 5 · Your children</p>
+    <p class="roadmap-bar__time">1 min in · about 4 min left</p>
+    <button class="roadmap-bar__toggle" type="button" aria-expanded="false">All steps<svg class="icon icon--s" aria-hidden="true"><use href="#i-chevron_down"/></svg></button>
+    <progress class="meter meter--on-dark roadmap-bar__meter" value="22" max="100" aria-label="Overall progress, 22%">22%</progress>
+  </div>
+  <aside class="flow__aside" aria-label="Your roadmap">
+  <div class="roadmap">
+    <p class="roadmap__title">Your roadmap</p>
+    <p class="roadmap__time"><span><svg class="icon icon--s" aria-hidden="true"><use href="#i-clock"/></svg></span><span class="tabular"><strong>1 min</strong> in</span><span class="tabular">about <strong>4 min</strong> left</span></p>
+    <progress class="meter meter--on-dark" value="22" max="100" aria-label="Overall progress, 22%">22%</progress>
+    <p class="roadmap__group">Getting started</p>
+    <ol class="roadmap__steps">
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Language</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Your name</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--current" aria-current="step"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden">Current step: </span>Your children</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Eligibility questions</span><span class="roadmap__mins">2 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>What they can get</span><span class="roadmap__mins">½ min</span></li>
+    </ol>
+    <p class="roadmap__foot">More steps appear once we know what your children can get.</p>
+  </div>
+  </aside>
+  <div class="flow__step">
+    <a class="back-link" href="./wizard.name.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Back</a>
+<section aria-labelledby="step-title">
+    <p class="step__eyebrow">Step 3 of 5</p>
+    <h1 class="step__title" id="step-title">Tell us about your children</h1>
+    <p class="step__lede">Add one child at a time. Each child gets their own claim.</p>
+    <div class="step__body">
+      <ul class="stack stack--s" aria-label="Children added">
+        <li class="card cluster cluster--between">
+          <span class="cluster"><span class="avatar avatar--mango">M</span><span><strong>Maya Lee</strong><br><span class="small muted">Born 14 March 2022 · age 4</span></span></span>
+          <span class="cluster"><button class="btn btn--quiet btn--icon" type="button" aria-label="Edit Maya"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg></button><button class="btn btn--quiet btn--icon" type="button" aria-label="Remove Maya"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button></span>
+        </li>
+      </ul>
+      <div class="card card--sand stack">
+        <h2 class="card__title">Add another child</h2>
+        <div class="field">
+          <label class="field__label" for="child-name">Child’s first name</label>
+          <input class="input" id="child-name" name="child-name" type="text" value="Theo" autocomplete="off">
+        </div>
+        <fieldset class="field">
+          <legend class="field__label">Date of birth</legend>
+          <p class="field__hint" id="child-dob-hint">For example, 14 March 2022</p>
+          <div class="field-row field-row--dob">
+            <div class="field"><label class="field__hint" for="child-dob-day">Day</label><input class="input" id="child-dob-day" name="child-dob-day" inputmode="numeric" value="2" aria-describedby="child-dob-hint"></div>
+            <div class="field"><label class="field__hint" for="child-dob-month">Month</label><select class="select" id="child-dob-month" name="child-dob-month"><option value="">Month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option selected>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></div>
+            <div class="field"><label class="field__hint" for="child-dob-year">Year</label><input class="input" id="child-dob-year" name="child-dob-year" inputmode="numeric" value="2025"></div>
+          </div>
+        </fieldset>
+        <fieldset class="field">
+          <legend class="field__label">You are their</legend>
+          <div class="choices choices--2">
+        <label class="choice"><input class="choice__control" type="radio" name="rel" value="parent" checked><span class="choice__body"><span class="choice__title">Parent</span></span></label>
+        <label class="choice"><input class="choice__control" type="radio" name="rel" value="guardian"><span class="choice__body"><span class="choice__title">Legal guardian</span></span></label>
+          </div>
+        </fieldset>
+        <button class="btn btn--secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add Theo</button>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn btn--primary" href="./wizard.eligibility.html">Continue with 1 child<svg class="icon" aria-hidden="true"><use href="#i-arrow_right"/></svg></a>
+    </div>
+    </section>
+  </div>
+</div>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

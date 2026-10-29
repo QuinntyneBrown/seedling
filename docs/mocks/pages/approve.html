@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Approve and send — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="approve" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./case.html">Save and exit</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="narrow" aria-labelledby="step-title">
+  <a class="back-link" href="./form-review.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Check the forms again</a>
+  <p class="step__eyebrow">Review and send · 4 of 4</p>
+  <h1 class="step__title" id="step-title">Approve what we’ll send</h1>
+  <p class="step__lede">Nothing has been sent yet. Here’s exactly what goes, and to whom.</p>
+  <div class="card mt-xl stack">
+    <div class="cluster"><span class="choice__icon"><svg class="icon" aria-hidden="true"><use href="#i-bank"/></svg></span><div><h2 class="card__title">To Northfield Credit Union</h2><p class="small muted">To open Maya’s RESP</p></div></div>
+    <ul class="rows">
+      <li class="row"><span>RESP application (4 pages)</span><a class="link small" href="./form-review.html">View</a></li>
+      <li class="row"><span>Photo of your driver’s licence</span><span class="small muted">1 image</span></li>
+      <li class="row"><span>Photo of your utility bill</span><span class="small muted">1 image</span></li>
+    </ul>
+  </div>
+  <div class="card mt-l stack">
+    <div class="cluster"><span class="choice__icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><div><h2 class="card__title">To the Government of Canada</h2><p class="small muted">Employment and Social Development Canada, sent by Northfield</p></div></div>
+    <ul class="rows">
+      <li class="row"><span>SDE 0093 grant application</span><a class="link small" href="./form-review.html">View</a></li>
+      <li class="row"><span>Asks for</span><span class="row__value">Canada Learning Bond <span class="amount">$2,000</span></span></li>
+    </ul>
+  </div>
+  <label class="check card card--sand mt-l"><input type="checkbox" name="confirm"><span>I confirm this information is true and I want Seedlings to send it on my behalf.</span></label>
+  <div class="actions">
+    <a class="btn btn--danger-outline" href="./case.html">Decline</a>
+    <a class="btn btn--primary" href="./submitted.html"><svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>Approve and send</a>
+  </div>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

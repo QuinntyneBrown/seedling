@@ -1,0 +1,102 @@
+{
+  "$description": "Seedlings brand tokens v1.0 (DTCG format), extracted from https://project-seedlings-branding-system-888.magicpatterns.app",
+  "color": {
+    "$type": "color",
+    "forest": {
+      "$value": "#123B2A",
+      "$description": "Primary. Trust: wordmark, headings, dark surfaces, app icon background."
+    },
+    "sprout": {
+      "$value": "#2E8049",
+      "$description": "Primary. Growth: primary buttons, links, progress, the large leaf."
+    },
+    "mango": {
+      "$value": "#F5A524",
+      "$description": "Primary. Hope: dollar amounts, highlights, celebrations, the small leaf."
+    },
+    "leaf": {
+      "$value": "#7CC47F",
+      "$description": "Supporting. Sprout's partner on Forest backgrounds and in dark mode."
+    },
+    "hibiscus": {
+      "$value": "#E4573D",
+      "$description": "Supporting. Illustration accents, deadlines, moments of delight."
+    },
+    "cream": { "$value": "#FFF6E9", "$description": "Neutral. Default background." },
+    "sand": {
+      "$value": "#F1E3C8",
+      "$description": "Neutral. Cards on cream, dividers, inactive states."
+    },
+    "ink": { "$value": "#16231C", "$description": "Neutral. Body copy. Never use pure black." }
+  },
+  "fontFamily": {
+    "$type": "fontFamily",
+    "display": {
+      "$value": ["Fraunces", "Georgia", "serif"],
+      "$description": "Semibold 600, SOFT 100. Display, H1, H2 only."
+    },
+    "body": {
+      "$value": ["Figtree", "system-ui", "sans-serif"],
+      "$description": "400/500/600/700. Body, labels, buttons, numbers."
+    }
+  },
+  "typography": {
+    "$type": "typography",
+    "display": {
+      "$value": {
+        "fontFamily": "{fontFamily.display}",
+        "fontSize": "40px",
+        "lineHeight": "44px",
+        "fontWeight": 600
+      }
+    },
+    "heading1": {
+      "$value": {
+        "fontFamily": "{fontFamily.display}",
+        "fontSize": "32px",
+        "lineHeight": "38px",
+        "fontWeight": 600
+      }
+    },
+    "heading2": {
+      "$value": {
+        "fontFamily": "{fontFamily.display}",
+        "fontSize": "24px",
+        "lineHeight": "30px",
+        "fontWeight": 600
+      }
+    },
+    "heading3": {
+      "$value": {
+        "fontFamily": "{fontFamily.body}",
+        "fontSize": "18px",
+        "lineHeight": "24px",
+        "fontWeight": 700
+      }
+    },
+    "body": {
+      "$value": {
+        "fontFamily": "{fontFamily.body}",
+        "fontSize": "16px",
+        "lineHeight": "24px",
+        "fontWeight": 400
+      }
+    },
+    "small": {
+      "$value": {
+        "fontFamily": "{fontFamily.body}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": 500
+      }
+    },
+    "caption": {
+      "$value": {
+        "fontFamily": "{fontFamily.body}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": 600
+      }
+    }
+  }
+}

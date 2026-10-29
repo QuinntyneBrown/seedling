@@ -3,17 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Seedling mocks</title>
+<title>Seedlings mocks</title>
+<link rel="icon" href="./assets/seedlings-mark-light.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./styles/tokens.css">
 <link rel="stylesheet" href="./styles/app.css">
 </head>
 <body data-page="index" data-shell="bare">
 <a class="skip-link" href="#main">Skip to content</a>
 <main class="launcher container" id="main">
-  <h1>Seedling mocks</h1>
-  <p class="launcher__lede">The static design reference. One tile per screen; add a tile for every page under <code>pages/</code>.</p>
-
-  <h2>Core</h2>
+  <div class="launcher__head">
+    <img class="brand__logo brand__logo--lg" src="./assets/seedlings-logo-horizontal-light.svg" alt="Seedlings">
+    <h1>Seedlings mocks</h1>
+    <p class="launcher__lede">The static design reference, one tile per screen in the screen inventory. Built with the Seedlings brand guidelines v1.0 (<code>docs/assets/brand</code>). Resize the window: 720px swaps the phone bottom nav for the top bar, 1024px opens the roadmap panel and wider layouts.</p>
+  </div>
+  <h2>1. Entry</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/landing.html"><span class="tile__id">S-01</span>Landing<small>Promise, “Check if my child qualifies”, install prompt</small></a></li>
+  </ul>
+  <p class="launcher__note">S-02 Language picker, S-03 Eligibility check and S-04 Eligibility result are steps inside the wizard: W-02, W-05 and W-06.</p>
+  <h2>2. Account</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/sign-up.html"><span class="tile__id">S-05</span>Sign up<small>Email or mobile, code instead of password</small></a></li>
+    <li><a class="tile" href="./pages/verify-code.html"><span class="tile__id">S-06</span>Verify code<small>One-time 6-digit code</small></a></li>
+    <li><a class="tile" href="./pages/sign-in.html"><span class="tile__id">S-07</span>Sign in<small>Returning parent</small></a></li>
+  </ul>
+  <p class="launcher__note">S-08 Add child is wizard step W-04.</p>
+  <h2>2a. Onboarding wizard</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/wizard.welcome.html"><span class="tile__id">W-01</span>Welcome<small>What Seedlings does, 8 steps, about 7 minutes</small></a></li>
+    <li><a class="tile" href="./pages/wizard.language.html"><span class="tile__id">W-02</span>Language<small>English / Français (absorbs S-02)</small></a></li>
+    <li><a class="tile" href="./pages/wizard.name.html"><span class="tile__id">W-03</span>Your name<small>Parent first and last name</small></a></li>
+    <li><a class="tile" href="./pages/wizard.children.html"><span class="tile__id">W-04</span>Your children<small>One child at a time, “Add another” (absorbs S-08)</small></a></li>
+    <li><a class="tile" href="./pages/wizard.eligibility.html"><span class="tile__id">W-05</span>Eligibility questions<small>Question 3 of 6 (absorbs S-03)</small></a></li>
+    <li><a class="tile" href="./pages/wizard.result.html"><span class="tile__id">W-06</span>Eligibility result<small>Amount per child; roadmap extends (absorbs S-04)</small></a></li>
+    <li><a class="tile" href="./pages/wizard.contact.html"><span class="tile__id">W-07</span>How to reach you<small>Push, SMS or email</small></a></li>
+    <li><a class="tile" href="./pages/wizard.consent.html"><span class="tile__id">W-08</span>Consent<small>Why the next steps need private details</small></a></li>
+    <li><a class="tile" href="./pages/wizard.roadmap.html"><span class="tile__id">W-09</span>Roadmap overview<small>Remaining steps with times, Continue or Finish later</small></a></li>
+    <li><a class="tile" href="./pages/wizard.done.html"><span class="tile__id">W-10</span>All set<small>Confirmation, then the dashboard</small></a></li>
+  </ul>
+  <p class="launcher__note">W-R Roadmap panel is on every wizard and intake screen, and shown on its own in System states.</p>
+  <h2>3. Intake</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/intake.consent.html"><span class="tile__id">S-09</span>Consent<small>Why each detail is needed, one consent control</small></a></li>
+    <li><a class="tile" href="./pages/intake.parent-identity.html"><span class="tile__id">S-10</span>Parent identity<small>Legal name, date of birth</small></a></li>
+    <li><a class="tile" href="./pages/intake.parent-address.html"><span class="tile__id">S-11</span>Parent address<small>Postal code lookup</small></a></li>
+    <li><a class="tile" href="./pages/intake.child-identity.html"><span class="tile__id">S-12</span>Child identity<small>Confirm the child’s details</small></a></li>
+    <li><a class="tile" href="./pages/intake.child-sin.html"><span class="tile__id">S-13</span>Child SIN<small>Masked entry, re-auth to show</small></a></li>
+    <li><a class="tile" href="./pages/intake.parent-sin.html"><span class="tile__id">S-14</span>Parent SIN<small>Masked entry, re-auth to show</small></a></li>
+    <li><a class="tile" href="./pages/intake.existing-resp.html"><span class="tile__id">S-15</span>Existing RESP<small>Provider and account number if yes</small></a></li>
+    <li><a class="tile" href="./pages/intake.contact.html"><span class="tile__id">S-16</span>Contact preference<small>Push, SMS or email</small></a></li>
+    <li><a class="tile" href="./pages/intake.document-capture.html"><span class="tile__id">S-17</span>Document capture<small>Camera with frame guide</small></a></li>
+    <li><a class="tile" href="./pages/intake.document-review.html"><span class="tile__id">S-18</span>Document review<small>Quality check, retake or accept</small></a></li>
+  </ul>
+  <h2>4. Agent and approval</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/provider.html"><span class="tile__id">S-19</span>Provider recommendation<small>No-fee provider, two-sentence reason, fee page link</small></a></li>
+    <li><a class="tile" href="./pages/form-review.html"><span class="tile__id">S-20</span>Form review<small>RESP application and SDE 0093, fields that need you first</small></a></li>
+    <li><a class="tile" href="./pages/plan.html"><span class="tile__id">S-21</span>Plan selection<small>Free, One-time or Annual</small></a></li>
+    <li><a class="tile" href="./pages/checkout.html"><span class="tile__id">S-22</span>Checkout<small>Hosted payment provider</small></a></li>
+    <li><a class="tile" href="./pages/approve.html"><span class="tile__id">S-23</span>Approve and submit<small>Exactly what goes, and to whom</small></a></li>
+    <li><a class="tile" href="./pages/submitted.html"><span class="tile__id">S-24</span>Submission confirmation<small>What happens next and when</small></a></li>
+  </ul>
+  <h2>5. Dashboard and case</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/dashboard.html"><span class="tile__id">S-25</span>Dashboard<small>One card per child with status and next action</small></a></li>
+    <li><a class="tile" href="./pages/case.html"><span class="tile__id">S-26</span>Case detail<small>Timeline, grants, activity</small></a></li>
+    <li><a class="tile" href="./pages/case.attention.html"><span class="tile__id">S-26</span>Case detail · needs attention<small>Blocked claim with the needs-attention banner</small></a></li>
+    <li><a class="tile" href="./pages/life-change.html"><span class="tile__id">S-27</span>Report a life change<small>Address, new child, custody, income</small></a></li>
+  </ul>
+  <h2>6. Settings</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/settings.html"><span class="tile__id">S-28</span>Settings<small>Profile, notifications, language, help, contact a person</small></a></li>
+    <li><a class="tile" href="./pages/billing.html"><span class="tile__id">S-29</span>Plan and billing<small>Current plan, receipts, cancel</small></a></li>
+    <li><a class="tile" href="./pages/privacy.html"><span class="tile__id">S-30</span>Privacy and data<small>Export, delete, document retention</small></a></li>
+  </ul>
+  <h2>7. System states</h2>
+  <ul class="tiles">
+    <li><a class="tile" href="./pages/dashboard.offline.html"><span class="tile__id">C-01</span>Offline banner<small>On the dashboard, with queued changes</small></a></li>
+    <li><a class="tile" href="./pages/dashboard.empty.html"><span class="tile__id">C-04</span>Empty dashboard<small>No child yet</small></a></li>
+    <li><a class="tile" href="./pages/system-states.html"><span class="tile__id">C-01–04</span>System states<small>Offline, re-authenticate, error, empty, roadmap panel</small></a></li>
+  </ul>
+  <h2>Shell</h2>
   <ul class="tiles">
     <li><a class="tile" href="./pages/_shell.html">Shell<small>The canonical skeleton every page copies</small></a></li>
   </ul>

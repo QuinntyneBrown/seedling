@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Settings — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="settings" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./dashboard.html">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html" aria-current="page">Settings</a>
+    </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <header class="page-header"><h1 class="page-header__title">Settings</h1></header>
+  <div class="settings">
+    <nav class="settings-nav" aria-label="Settings sections">
+      <a href="#profile">Profile</a><a href="#notifications">Notifications</a><a href="#language">Language</a><a href="#help">Help</a><a href="./billing.html">Plan and billing</a><a href="./privacy.html">Privacy and data</a>
+    </nav>
+    <div class="stack stack--l">
+      <section class="card" id="profile" aria-labelledby="profile-title">
+        <h2 class="section-title" id="profile-title">Profile</h2>
+        <ul class="rows">
+          <li class="row"><div class="row__main"><span class="row__label">Name</span><span class="row__value">Jordan Lee</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit name">Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Email</span><span class="row__value">jordan.lee@example.ca</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit email">Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Mobile</span><span class="row__value">416-555-0142</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit mobile number">Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Children</span><span class="row__value">Maya, Theo</span></div><a class="btn btn--quiet btn--s" href="./dashboard.html" aria-label="Manage children">Manage</a></li>
+        </ul>
+      </section>
+      <section class="card" id="notifications" aria-labelledby="notif-title">
+        <h2 class="section-title" id="notif-title">How we reach you</h2>
+        <fieldset><legend class="visually-hidden">Notification channel</legend><div class="choices">
+        <label class="choice"><input class="choice__control" type="radio" name="channel" value="push" checked><span class="choice__icon"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="choice__body"><span class="choice__title">App notifications</span><span class="choice__desc">On this phone.</span></span></label>
+        <label class="choice"><input class="choice__control" type="radio" name="channel" value="sms"><span class="choice__icon"><svg class="icon" aria-hidden="true"><use href="#i-message"/></svg></span><span class="choice__body"><span class="choice__title">Text message</span><span class="choice__desc">416-555-0142</span></span></label>
+        <label class="choice"><input class="choice__control" type="radio" name="channel" value="email"><span class="choice__icon"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="choice__body"><span class="choice__title">Email</span><span class="choice__desc">jordan.lee@example.ca</span></span></label>
+        </div></fieldset>
+      </section>
+      <section class="card" id="language" aria-labelledby="lang-title">
+        <h2 class="section-title" id="lang-title">Language</h2>
+        <div class="segments" role="group" aria-label="Language"><button class="segments__tab" type="button" aria-pressed="true">English</button><button class="segments__tab" type="button" aria-pressed="false" lang="fr">Français</button></div>
+      </section>
+      <section class="card" id="help" aria-labelledby="help-title">
+        <h2 class="section-title" id="help-title">Help</h2>
+        <ul class="rows">
+          <li class="row"><a class="row--link cluster" href="https://help.example.com/seedlings"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="row__value">Questions and answers</span><svg class="icon icon--s" aria-hidden="true"><use href="#i-external"/></svg></a></li>
+          <li class="row"><div class="row__main"><span class="row__value">Talk to a person</span><span class="row__label">Weekdays 8 am to 8 pm ET. Usually under 5 minutes.</span></div><a class="btn btn--secondary btn--s" href="./settings.html#help"><svg class="icon icon--s" aria-hidden="true"><use href="#i-chat"/></svg>Start a chat</a></li>
+        </ul>
+      </section>
+      <section class="card" aria-label="Account">
+        <ul class="rows">
+          <li class="row"><a class="row--link cluster" href="./billing.html"><svg class="icon" aria-hidden="true"><use href="#i-receipt"/></svg><span class="row__value">Plan and billing</span></a><svg class="icon" aria-hidden="true"><use href="#i-chevron_right"/></svg></li>
+          <li class="row"><a class="row--link cluster" href="./privacy.html"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="row__value">Privacy and data</span></a><svg class="icon" aria-hidden="true"><use href="#i-chevron_right"/></svg></li>
+          <li class="row"><a class="row--link cluster" href="./sign-in.html"><svg class="icon" aria-hidden="true"><use href="#i-sign_out"/></svg><span class="row__value">Sign out</span></a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html" aria-current="page"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

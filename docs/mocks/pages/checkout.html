@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checkout — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="checkout" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./case.html">Save and exit</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="narrow" aria-labelledby="step-title">
+  <a class="back-link" href="./plan.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Change plan</a>
+  <p class="step__eyebrow">Review and send · 3 of 4</p>
+  <h1 class="step__title" id="step-title">Pay $39 for the One-time plan</h1>
+  <p class="step__lede">Payment happens on our payment provider’s secure page. Seedlings never sees your card number.</p>
+  <div class="card mt-xl">
+    <ul class="rows">
+      <li class="row"><span>One-time plan · Maya and Theo</span><span class="row__value tabular">$39.00</span></li>
+      <li class="row"><span>HST (13%)</span><span class="row__value tabular">$5.07</span></li>
+      <li class="row"><strong>Total</strong><strong class="tabular">$44.07</strong></li>
+    </ul>
+  </div>
+  <div class="hosted mt-l" role="region" aria-label="Secure payment page from the payment provider">
+    <p class="hosted__bar"><svg class="icon icon--s" aria-hidden="true"><use href="#i-lock"/></svg>Secure payment page · hosted by the payment provider</p>
+    <div class="hosted__body">
+        <div class="field">
+          <label class="field__label" for="card-number">Card number</label>
+          <input class="input" id="card-number" name="card-number" type="text" autocomplete="cc-number" inputmode="numeric">
+        </div>
+      <div class="field-row field-row--2">
+        <div class="field">
+          <label class="field__label" for="card-exp">Expiry (MM/YY)</label>
+          <input class="input" id="card-exp" name="card-exp" type="text" autocomplete="cc-exp" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label class="field__label" for="card-cvc">Security code</label>
+          <input class="input" id="card-cvc" name="card-cvc" type="text" autocomplete="cc-csc" inputmode="numeric">
+        </div>
+      </div>
+      <a class="btn btn--primary btn--block" href="./approve.html">Pay $44.07</a>
+    </div>
+  </div>
+  <p class="small muted mt-m">Refund in full if the government says Maya isn’t eligible.</p>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

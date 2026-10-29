@@ -1,39 +1,115 @@
-/* Seedling mock design tokens. The mocks own this file; the product's theme is
-   frontend/projects/components/src/lib/tokens and the two must agree by role. */
+/* Seedlings mock design tokens. The mocks own this file; the product's theme is
+   frontend/projects/components/src/lib/tokens and the two must agree by role.
+
+   Values come from the Seedlings brand guidelines v1.0 (docs/assets/brand):
+   Forest #123B2A, Sprout #2E8049, Mango #F5A524, Leaf #7CC47F, Hibiscus #E4573D,
+   Cream #FFF6E9, Sand #F1E3C8, Ink #16231C. Names follow the Fluent UI v9 roles;
+   brand-only roles with no Fluent equivalent (display face, mango, hibiscus)
+   are named in the same style. Contrast notes give the ratio on Cream. */
 
 :root {
-  --colorNeutralForeground1: #242424;
-  --colorNeutralForeground2: #424242;
-  --colorNeutralForeground3: #616161;
-  --colorNeutralForegroundOnBrand: #ffffff;
-  --colorNeutralBackground1: #ffffff;
-  --colorNeutralBackground2: #fafafa;
-  --colorNeutralBackground3: #f0f0f0;
-  --colorNeutralStroke1: #d1d1d1;
-  --colorNeutralStroke2: #e6e6e6;
-  --colorBrandForeground1: #1f6f4a;
-  --colorBrandBackground: #1f6f4a;
-  --colorBrandBackgroundHover: #1c7848;
-  --colorBrandBackground2: #e8f5ec;
-  --colorBrandStroke1: #1f6f4a;
-  --colorStrokeFocus2: #1f6f4a;
+  /* Text */
+  --colorNeutralForeground1: #16231c; /* Ink. 15.2:1 */
+  --colorNeutralForeground2: #3b4a41; /* 8.8:1 */
+  --colorNeutralForeground3: #5a665e; /* 5.6:1, captions and hints */
+  --colorNeutralForegroundOnBrand: #ffffff; /* on Sprout 4.9:1 */
+  --colorNeutralForegroundInverted: #fff6e9; /* Cream on Forest 11.6:1 */
+  --colorBrandForeground1: #2e8049; /* Sprout, links on Cream or White only (4.6:1); never on Sand */
+  --colorBrandForeground2: #123b2a; /* Forest, headings and selected text */
+  --colorBrandForegroundInverted: #7cc47f; /* Leaf on Forest 6.0:1 */
 
-  --fontFamilyBase: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --fontSizeBase300: 0.875rem;
-  --fontSizeBase400: 1rem;
-  --fontSizeHero800: 2.25rem;
-  --lineHeightNormal: 1.5;
-  --lineHeightTight: 1.2;
+  /* Surfaces */
+  --colorNeutralBackground1: #ffffff; /* cards */
+  --colorNeutralBackground2: #fff6e9; /* Cream, the page */
+  --colorNeutralBackground3: #f1e3c8; /* Sand, cards on cream, inactive */
+  --colorNeutralBackgroundInverted: #123b2a; /* Forest */
+  --colorNeutralBackgroundCamera: #16231c; /* Ink, the camera viewfinder */
+  --colorBrandBackground: #2e8049; /* Sprout, primary buttons */
+  --colorBrandBackgroundHover: #123b2a; /* Forest */
+  --colorBrandBackgroundPressed: #0c2a1e;
+  --colorBrandBackground2: #e4f2e2; /* selected choices, success fills */
+  --colorScrim: rgb(22 35 28 / 0.5);
 
+  /* Strokes */
+  --colorNeutralStroke1: #8c8a7a; /* field borders, 3.5:1 on White */
+  --colorNeutralStroke2: #f1e3c8; /* Sand dividers */
+  --colorNeutralStroke3: #e6d6b6; /* card edges on Cream */
+  --colorBrandStroke1: #2e8049;
+  --colorStrokeFocus2: #2e8049;
+
+  /* Brand accents */
+  --colorAccentMango: #f5a524; /* amounts and highlights; Ink text on it 8.0:1 */
+  --colorAccentMangoSubtle: #fdefd3;
+  --colorAccentHibiscus: #e4573d; /* icons and 24px+ text only (3.4:1) */
+  --colorAccentLeaf: #7cc47f;
+
+  /* Status */
+  --colorStatusSuccessForeground1: #123b2a;
+  --colorStatusSuccessBackground1: #e4f2e2;
+  --colorStatusWarningForeground1: #8a5300; /* 5.6:1 on its background */
+  --colorStatusWarningBackground1: #fdefd3;
+  --colorStatusDangerForeground1: #b23a22; /* 5.1:1 on its background */
+  --colorStatusDangerBackground1: #fce8e3;
+  --colorStatusDangerBorder1: #e4573d;
+
+  /* Type */
+  --fontFamilyBase: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fontFamilyDisplay: 'Fraunces', Georgia, serif;
+  --fontVariationDisplay: 'SOFT' 100, 'WONK' 0;
+  --fontSizeBase200: 0.75rem; /* 12 caption */
+  --fontSizeBase300: 0.875rem; /* 14 small */
+  --fontSizeBase400: 1rem; /* 16 body */
+  --fontSizeBase500: 1.125rem; /* 18 H3 */
+  --fontSizeHero700: 1.5rem; /* 24 H2 */
+  --fontSizeHero800: 2rem; /* 32 H1 */
+  --fontSizeHero900: 2.5rem; /* 40 display */
+  --lineHeightBase200: 1rem;
+  --lineHeightBase300: 1.25rem;
+  --lineHeightBase400: 1.5rem;
+  --lineHeightBase500: 1.5rem;
+  --lineHeightHero700: 1.875rem;
+  --lineHeightHero800: 2.375rem;
+  --lineHeightHero900: 2.75rem;
+  --fontWeightRegular: 400;
+  --fontWeightMedium: 500;
+  --fontWeightSemibold: 600;
+  --fontWeightBold: 700;
+  --letterSpacingDisplay: -0.02em;
+
+  /* Spacing (4px grid) */
+  --spacingXXS: 2px;
+  --spacingXS: 4px;
   --spacingS: 8px;
   --spacingM: 12px;
   --spacingL: 16px;
   --spacingXL: 24px;
+  --spacingXXL: 32px;
+  --spacingXXXL: 48px;
+  --spacingHuge: 64px;
+
+  /* Shape */
   --borderRadiusMedium: 8px;
   --borderRadiusLarge: 12px;
+  --borderRadiusXLarge: 16px;
+  --borderRadius2XLarge: 24px;
+  --borderRadiusCircular: 9999px;
   --strokeWidthThin: 1px;
   --strokeWidthThick: 2px;
+
+  /* Elevation (Forest-tinted, never grey) */
+  --shadow4: 0 1px 2px rgb(18 59 42 / 0.06), 0 2px 6px rgb(18 59 42 / 0.06);
+  --shadow16: 0 8px 24px rgb(18 59 42 / 0.12), 0 2px 6px rgb(18 59 42 / 0.08);
+  --shadow28: 0 16px 48px rgb(18 59 42 / 0.2);
+
+  /* Layout */
   --layoutContentMaxWidth: 1120px;
-  --layoutControlHeight: 44px;
-  --durationFast: 100ms;
+  --layoutReadingMaxWidth: 560px;
+  --layoutAsideWidth: 300px;
+  --layoutControlHeight: 48px;
+  --layoutTopbarHeight: 64px;
+
+  /* Motion */
+  --durationFast: 150ms;
+  --durationNormal: 200ms;
+  --curveEasyEase: cubic-bezier(0.33, 0, 0.67, 1);
 }

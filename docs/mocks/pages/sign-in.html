@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="sign-in" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="auth" aria-labelledby="auth-title">
+  <h1 class="auth__title" id="auth-title">Welcome back</h1>
+  <p class="auth__lede">Sign in to see where your children’s claims are.</p>
+  <div class="auth__body">
+    <div class="segments" role="group" aria-label="Sign in with">
+      <button class="segments__tab" type="button" aria-pressed="true">Email</button>
+      <button class="segments__tab" type="button" aria-pressed="false">Mobile number</button>
+    </div>
+        <div class="field">
+          <label class="field__label" for="email">Email address</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="email">
+        </div>
+    <label class="check small"><input type="checkbox" name="remember" checked><span>Keep me signed in on this device</span></label>
+    <a class="btn btn--primary btn--block" href="./verify-code.html">Send my code</a>
+  </div>
+  <p class="auth__foot">New to Seedlings? <a class="link" href="./wizard.welcome.html">Check if your child qualifies</a></p>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>
