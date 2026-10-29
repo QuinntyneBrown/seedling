@@ -1,0 +1,40 @@
+/*
+ * Seedlings brand tokens, v1.0 (October 2026).
+ * Extracted from https://project-seedlings-branding-system-888.magicpatterns.app
+ * Brand-level values only; product components read the Fluent-model role tokens generated
+ * in frontend/projects/components/src/lib/tokens/.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..800,0..100&family=Figtree:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Primary */
+  --brand-forest: #123b2a; /* Trust: wordmark, headings, dark surfaces, app icon tile */
+  --brand-sprout: #2e8049; /* Growth: primary buttons, links, progress, the large leaf */
+  --brand-mango: #f5a524; /* Hope: dollar amounts, highlights, celebrations, the small leaf */
+
+  /* Supporting */
+  --brand-leaf: #7cc47f; /* Sprout's partner on Forest and in dark mode */
+  --brand-hibiscus: #e4573d; /* Illustration accents, deadlines, moments of delight */
+
+  /* Neutrals */
+  --brand-cream: #fff6e9; /* Default background */
+  --brand-sand: #f1e3c8; /* Cards on cream, dividers, inactive states */
+  --brand-ink: #16231c; /* Body copy; never pure black */
+
+  /* Typefaces */
+  --brand-font-display: 'Fraunces', Georgia, serif;
+  --brand-font-display-variation: 'SOFT' 100, 'WONK' 0;
+  --brand-font-body: 'Figtree', system-ui, sans-serif;
+
+  /* Mobile type scale: size / line height / weight */
+  --brand-type-display: 600 40px/44px var(--brand-font-display);
+  --brand-type-h1: 600 32px/38px var(--brand-font-display);
+  --brand-type-h2: 600 24px/30px var(--brand-font-display);
+  --brand-type-h3: 700 18px/24px var(--brand-font-body);
+  --brand-type-body: 400 16px/24px var(--brand-font-body);
+  --brand-type-small: 500 14px/20px var(--brand-font-body);
+  --brand-type-caption: 600 12px/16px var(--brand-font-body);
+
+  /* App icon */
+  --brand-app-icon-radius: 23%;
+}
