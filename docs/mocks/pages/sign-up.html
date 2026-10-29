@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Create your account — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="sign-up" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="auth" aria-labelledby="auth-title">
+  <h1 class="auth__title" id="auth-title">Save your progress</h1>
+  <p class="auth__lede">We’ll send you a code. No password to remember.</p>
+  <div class="auth__body">
+    <div class="segments" role="group" aria-label="Sign up with">
+      <button class="segments__tab" type="button" aria-pressed="true">Email</button>
+      <button class="segments__tab" type="button" aria-pressed="false">Mobile number</button>
+    </div>
+        <div class="field">
+          <label class="field__label" for="email">Email address</label>
+          <p class="field__hint" id="email-hint">We only use it to sign you in and to send updates about your claim.</p>
+          <input class="input" id="email" name="email" type="email" value="jordan.lee@example.ca" autocomplete="email" aria-describedby="email-hint">
+        </div>
+    <label class="check small"><input type="checkbox" name="terms" checked><span>I agree to the <a class="link" href="./privacy.html">terms and privacy notice</a>.</span></label>
+    <a class="btn btn--primary btn--block" href="./verify-code.html">Send my code</a>
+  </div>
+  <p class="auth__foot">Already have an account? <a class="link" href="./sign-in.html">Sign in</a></p>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

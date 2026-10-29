@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check the forms — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="form-review" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./case.html">Save and exit</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section class="narrow" aria-labelledby="step-title">
+  <a class="back-link" href="./provider.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Back</a>
+  <p class="step__eyebrow">Review and send · 2 of 4</p>
+  <h1 class="step__title" id="step-title">Check Maya’s forms</h1>
+  <p class="step__lede">We filled in two forms from your answers. Two fields still need you.</p>
+  <div class="segments mt-xl" role="tablist" aria-label="Forms">
+    <button class="segments__tab" type="button" role="tab" aria-selected="true">RESP application</button>
+    <button class="segments__tab" type="button" role="tab" aria-selected="false">SDE 0093 grant form</button>
+  </div>
+  <div class="card mt-l">
+    <section class="form-section" aria-labelledby="needs-title">
+      <h2 class="section-title" id="needs-title">Needs you · 2</h2>
+      <div class="row row--needs"><div class="row__main stack stack--s">        <div class="field">
+          <label class="field__label" for="beneficiary-rel">Is Maya related to you by blood or adoption?</label>
+          <p class="field__hint" id="beneficiary-rel-hint">Needed for a family plan.</p>
+          <select class="select" id="beneficiary-rel" name="beneficiary-rel" aria-describedby="beneficiary-rel-hint"><option>Choose</option><option>Yes, by birth</option><option>Yes, by adoption</option><option>No</option></select>
+        </div></div></div>
+      <div class="row row--needs"><div class="row__main stack stack--s">        <div class="field">
+          <label class="field__label" for="employer">Your occupation</label>
+          <p class="field__hint" id="employer-hint">The provider asks this to meet anti-fraud rules.</p>
+          <input class="input" id="employer" name="employer" type="text" aria-describedby="employer-hint">
+        </div></div></div>
+    </section>
+    <section class="form-section" aria-labelledby="filled-title">
+      <h2 class="section-title" id="filled-title">Filled in by Seedlings</h2>
+      <ul class="rows">
+          <li class="row"><div class="row__main"><span class="row__label">Subscriber</span><span class="row__value">Jordan Alexis Lee</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Subscriber"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Subscriber SIN</span><span class="row__value">••• ••• 219</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Subscriber SIN"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Address</span><span class="row__value">1184 Willow Bend Crescent, Mississauga ON L5M 4Z5</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Address"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Beneficiary</span><span class="row__value">Maya Grace Lee, born 14 March 2022</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Beneficiary"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Beneficiary SIN</span><span class="row__value">••• ••• 678</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Beneficiary SIN"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">Plan type</span><span class="row__value">Family plan, no-fee</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit Plan type"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+          <li class="row"><div class="row__main"><span class="row__label">First deposit</span><span class="row__value">$0</span></div><button class="btn btn--quiet btn--s" type="button" aria-label="Edit First deposit"><svg class="icon icon--s" aria-hidden="true"><use href="#i-edit"/></svg>Edit</button></li>
+      </ul>
+    </section>
+  </div>
+  <div class="actions">
+    <a class="btn btn--primary" href="./plan.html">Continue<svg class="icon" aria-hidden="true"><use href="#i-arrow_right"/></svg></a>
+  </div>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="dashboard" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./dashboard.html" aria-current="page">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html">Settings</a>
+    </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <header class="page-header"><div><p class="page-header__eyebrow">Welcome</p><h1 class="page-header__title">Hi, Jordan</h1></div></header>
+  <div class="empty">
+    <img class="empty__art" src="../assets/seedlings-mark-light.svg" alt="">
+    <h2 class="empty__title">Add your first child</h2>
+    <p class="empty__text">Tell us their name and birth date and we’ll show you what they can get. Most children born since 2004 qualify for something.</p>
+    <a class="btn btn--primary" href="./wizard.children.html"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add a child</a>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html" aria-current="page"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

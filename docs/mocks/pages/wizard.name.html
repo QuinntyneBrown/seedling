@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your name — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="wizard" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./dashboard.html">Finish later</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<div class="flow">
+  <div class="roadmap-bar">
+    <p class="roadmap-bar__step">Step 2 of 5 · Your name</p>
+    <p class="roadmap-bar__time">Just started in · about 4 min left</p>
+    <button class="roadmap-bar__toggle" type="button" aria-expanded="false">All steps<svg class="icon icon--s" aria-hidden="true"><use href="#i-chevron_down"/></svg></button>
+    <progress class="meter meter--on-dark roadmap-bar__meter" value="11" max="100" aria-label="Overall progress, 11%">11%</progress>
+  </div>
+  <aside class="flow__aside" aria-label="Your roadmap">
+  <div class="roadmap">
+    <p class="roadmap__title">Your roadmap</p>
+    <p class="roadmap__time"><span><svg class="icon icon--s" aria-hidden="true"><use href="#i-clock"/></svg></span><span class="tabular"><strong>Just started</strong> in</span><span class="tabular">about <strong>4 min</strong> left</span></p>
+    <progress class="meter meter--on-dark" value="11" max="100" aria-label="Overall progress, 11%">11%</progress>
+    <p class="roadmap__group">Getting started</p>
+    <ol class="roadmap__steps">
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Language</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--current" aria-current="step"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden">Current step: </span>Your name</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Your children</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Eligibility questions</span><span class="roadmap__mins">2 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>What they can get</span><span class="roadmap__mins">½ min</span></li>
+    </ol>
+    <p class="roadmap__foot">More steps appear once we know what your children can get.</p>
+  </div>
+  </aside>
+  <div class="flow__step">
+    <a class="back-link" href="./wizard.language.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Back</a>
+<section aria-labelledby="step-title">
+    <p class="step__eyebrow">Step 2 of 5</p>
+    <h1 class="step__title" id="step-title">What’s your name?</h1>
+    <p class="step__lede">The parent or guardian who will open the RESP.</p>
+    <div class="step__body">
+        <div class="field">
+          <label class="field__label" for="first-name">First name</label>
+          <input class="input" id="first-name" name="first-name" type="text" value="Jordan" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label class="field__label" for="last-name">Last name</label>
+          <input class="input" id="last-name" name="last-name" type="text" value="Lee" autocomplete="family-name">
+        </div>
+        <p class="step__note"><svg class="icon icon--s" aria-hidden="true"><use href="#i-info"/></svg><span>We use your name on the forms. You can add your legal name later if it’s different.</span></p>
+    </div>
+    <div class="actions">
+      <a class="btn btn--primary" href="./wizard.children.html">Continue<svg class="icon" aria-hidden="true"><use href="#i-arrow_right"/></svg></a>
+    </div>
+    </section>
+  </div>
+</div>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>System states — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="system-states" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./dashboard.html" aria-current="page">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html">Settings</a>
+    </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <header class="page-header"><div><h1 class="page-header__title">System states</h1><p class="page-header__subtitle">Components that appear on many screens, shown on their own. In the app they are CDK overlays or banners, not pages.</p></div></header>
+  <div class="gallery">
+    <section class="specimen" aria-labelledby="c01"><h2 class="specimen__label" id="c01">C-01 · Offline banner</h2><div class="specimen__stage specimen__stage--flush">
+      <div class="banner banner--offline" role="status"><div class="cluster"><svg class="icon" aria-hidden="true"><use href="#i-wifi_off"/></svg><p class="banner__text"><strong>You’re offline.</strong> 2 changes will send when you reconnect.</p></div></div>
+    </div><p class="small muted">Sits under the top bar on every screen. See it in place on <a class="link" href="./dashboard.offline.html">Home (offline)</a>.</p></section>
+
+    <section class="specimen" aria-labelledby="c02"><h2 class="specimen__label" id="c02">C-02 · Re-authenticate</h2><div class="scrim">
+      <div class="dialog" id="dialog-reauth" role="dialog" aria-modal="true" aria-labelledby="reauth-title">
+        <div class="dialog__head"><h3 class="dialog__title display" id="reauth-title">Confirm it’s you</h3><button class="btn btn--quiet btn--icon" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+        <p class="dialog__body">To show Maya’s SIN, we sent a code to 416-555-0142.</p>
+        <div class="stack mt-l">
+        <div class="field">
+          <label class="field__label" for="reauth-code">Code</label>
+          <input class="input input--mono" id="reauth-code" name="reauth-code" type="text" autocomplete="one-time-code" inputmode="numeric">
+        </div>
+          <button class="btn btn--primary btn--block" type="button">Confirm</button>
+          <button class="btn btn--quiet btn--block" type="button">Use Face ID instead</button>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="specimen" aria-labelledby="c03"><h2 class="specimen__label" id="c03">C-03 · Error</h2><div class="specimen__stage">
+      <div class="empty" role="alert">
+        <span class="hero-mark hero-mark--danger"><svg class="icon icon--l" aria-hidden="true"><use href="#i-alert"/></svg></span>
+        <h3 class="empty__title display">We couldn’t reach Northfield</h3>
+        <p class="empty__text">Their system isn’t answering right now. Your answers are saved and nothing was lost.</p>
+        <div class="cluster"><button class="btn btn--primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Try again</button><a class="btn btn--quiet" href="./settings.html#help">Talk to a person</a></div>
+      </div>
+    </div></section>
+
+    <section class="specimen" aria-labelledby="c04"><h2 class="specimen__label" id="c04">C-04 · Empty dashboard</h2><p class="small">In place on <a class="link" href="./dashboard.empty.html">Home (no children yet)</a>.</p></section>
+
+    <section class="specimen" aria-labelledby="wr"><h2 class="specimen__label" id="wr">W-R · Roadmap panel</h2>
+      <p class="small">On every wizard and intake screen. The panel from 1024px; under 1024px, including 320px phones, it collapses to the bar and opens on <em>All steps</em>.</p>
+      <div class="grid-2">
+        <div class="specimen__stage">
+  <aside aria-label="Your roadmap">
+  <div class="roadmap">
+    <p class="roadmap__title">Your roadmap</p>
+    <p class="roadmap__time"><span><svg class="icon icon--s" aria-hidden="true"><use href="#i-clock"/></svg></span><span class="tabular"><strong>10 min</strong> in</span><span class="tabular">about <strong>12 min</strong> left</span></p>
+    <progress class="meter meter--on-dark" value="43" max="100" aria-label="Overall progress, 43%">43%</progress>
+    <p class="roadmap__group">Getting started</p>
+    <ol class="roadmap__steps">
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Eligibility and set-up</span><span class="roadmap__mins">7 min</span></li>
+    </ol>
+    <p class="roadmap__group">Your details</p>
+    <ol class="roadmap__steps">
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Why we need your details</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>About you</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Your address</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--done"><span class="roadmap__dot"><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg></span><span class="roadmap__label"><span class="visually-hidden">Done: </span>Maya's details</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--current" aria-current="step"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden">Current step: </span>Maya's SIN</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Your SIN</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Existing RESP</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>How to reach you</span><span class="roadmap__mins">½ min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Photos of documents</span><span class="roadmap__mins">3 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Check the photos</span><span class="roadmap__mins">1 min</span></li>
+    </ol>
+    <p class="roadmap__group">Review and send</p>
+    <ol class="roadmap__steps">
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Your RESP provider</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Check the forms</span><span class="roadmap__mins">2 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Choose a plan</span><span class="roadmap__mins">1 min</span></li>
+      <li class="roadmap__step roadmap__step--todo"><span class="roadmap__dot"></span><span class="roadmap__label"><span class="visually-hidden"></span>Approve and send</span><span class="roadmap__mins">1 min</span></li>
+    </ol>
+    <p class="roadmap__foot">Your answers save as you go. Pick up on any device.</p>
+  </div>
+  </aside>
+        </div>
+        <div class="specimen__stage specimen__stage--narrow">
+  <div class="roadmap-bar roadmap-bar--specimen">
+    <p class="roadmap-bar__step">Step 5 of 10 · Maya’s SIN</p>
+    <p class="roadmap-bar__time">10 min in · about 11 min left</p>
+    <button class="roadmap-bar__toggle" type="button" aria-expanded="false">All steps<svg class="icon icon--s" aria-hidden="true"><use href="#i-chevron_down"/></svg></button>
+    <progress class="meter meter--on-dark roadmap-bar__meter" value="48" max="100" aria-label="Overall progress, 48%">48%</progress>
+  </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html" aria-current="page"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

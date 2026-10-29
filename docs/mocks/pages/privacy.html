@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy and data — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="privacy" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./dashboard.html">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html" aria-current="page">Settings</a>
+    </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <div class="narrow">
+  <a class="back-link" href="./settings.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Settings</a>
+  <h1 class="page-header__title">Privacy and data</h1>
+  <p class="page-header__subtitle">What we keep, and your controls over it.</p>
+  <section class="card mt-xl" aria-labelledby="ret-title">
+    <h2 class="section-title" id="ret-title">Document photos</h2>
+    <fieldset><legend class="visually-hidden">How long to keep document photos</legend><div class="choices">
+        <label class="choice"><input class="choice__control" type="radio" name="retain" value="30" checked><span class="choice__body"><span class="choice__title">Delete 30 days after a claim is sent</span><span class="choice__desc">Recommended. Enough time if a provider asks again.</span></span></label>
+        <label class="choice"><input class="choice__control" type="radio" name="retain" value="now"><span class="choice__body"><span class="choice__title">Delete as soon as a claim is sent</span></span></label>
+        <label class="choice"><input class="choice__control" type="radio" name="retain" value="keep"><span class="choice__body"><span class="choice__title">Keep until I delete them</span><span class="choice__desc">Handy for a new child or a move.</span></span></label>
+    </div></fieldset>
+  </section>
+  <section class="card mt-l" aria-labelledby="exp-title">
+    <h2 class="section-title" id="exp-title">Export my data</h2>
+    <p class="small">A ZIP of your answers, forms, documents and activity log. We email you a download link within 24 hours.</p>
+    <div class="actions actions--start"><button class="btn btn--secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Request my data</button></div>
+  </section>
+  <section class="card mt-l" aria-labelledby="del-title">
+    <h2 class="section-title" id="del-title">Delete my account</h2>
+    <p class="small">Deletes everything Seedlings holds about you and your children. Maya’s RESP at Northfield and any money in it are not affected.</p>
+    <div class="actions actions--start"><button class="btn btn--danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete my account</button></div>
+  </section>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html" aria-current="page"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

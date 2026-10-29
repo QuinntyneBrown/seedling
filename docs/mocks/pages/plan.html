@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Choose a plan — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="plan" data-shell="bare">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="flowbar">
+  <div class="container flowbar__inner">
+    <a class="brand" href="./landing.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <div class="flowbar__actions"><a class="btn btn--quiet btn--s" href="./case.html">Save and exit</a></div>
+  </div>
+</header>
+<main class="flow-main container" id="main">
+<section aria-labelledby="step-title">
+  <div>
+  <a class="back-link" href="./form-review.html"><svg class="icon icon--s" aria-hidden="true"><use href="#i-arrow_left"/></svg>Back</a>
+  <p class="step__eyebrow">Review and send · 3 of 4</p>
+  <h1 class="step__title" id="step-title">How much help do you want?</h1>
+  <p class="step__lede">The grants are the same on every plan. You only pay for us doing the work.</p>
+  </div>
+  <fieldset class="mt-xl">
+    <legend class="visually-hidden">Plan</legend>
+    <div class="grid-3">
+      <label class="choice"><input class="choice__control" type="radio" name="plan" value="free"><span class="choice__body plan"><span class="cluster cluster--between"><span class="choice__title">Free</span></span><span class="plan__price">$0 <small></small></span><ul class="plan__list"><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Eligibility check and amounts</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Pre-filled forms to print and send yourself</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Reminders</span></li></ul></span></label>
+      <label class="choice"><input class="choice__control" type="radio" name="plan" value="once" checked><span class="choice__body plan"><span class="cluster cluster--between"><span class="choice__title">One-time</span><span class="chip chip--mango">Most chosen</span></span><span class="plan__price">$39 <small>once</small></span><ul class="plan__list"><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Everything in Free</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>We send the forms for all your children</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>We follow up with the provider and the government</span></li></ul></span></label>
+      <label class="choice"><input class="choice__control" type="radio" name="plan" value="annual"><span class="choice__body plan"><span class="cluster cluster--between"><span class="choice__title">Annual</span></span><span class="plan__price">$24 <small>a year</small></span><ul class="plan__list"><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Everything in One-time</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Yearly check that every grant arrived</span></li><li><svg class="icon icon--s" aria-hidden="true"><use href="#i-check"/></svg><span>Life changes handled, like a move or a new baby</span></li></ul></span></label>
+    </div>
+  </fieldset>
+  <div class="actions">
+    <a class="btn btn--primary" href="./checkout.html">Continue with One-time<svg class="icon" aria-hidden="true"><use href="#i-arrow_right"/></svg></a>
+  </div>
+</section>
+</main>
+<script src="../app.js"></script>
+</body>
+</html>

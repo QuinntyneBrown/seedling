@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 320" role="img" aria-label="Illustration: a seedling growing from a coin-filled pot">
+  <circle cx="180" cy="160" r="150" fill="#F1E3C8"/>
+  <circle cx="290" cy="70" r="22" fill="#F5A524"/>
+  <circle cx="70" cy="96" r="10" fill="#E4573D"/>
+  <circle cx="300" cy="230" r="8" fill="#7CC47F"/>
+  <path d="M180 220V120" stroke="#123B2A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M180 170c-34 0-56-22-56-56 34 0 56 22 56 56z" fill="#F5A524"/>
+  <path d="M180 140c0-42 26-72 66-72 0 42-28 72-66 72z" fill="#2E8049"/>
+  <path d="M112 214h136l-14 76a10 10 0 0 1-10 8h-88a10 10 0 0 1-10-8z" fill="#E4573D"/>
+  <rect x="104" y="204" width="152" height="22" rx="8" fill="#123B2A"/>
+  <ellipse cx="150" cy="204" rx="18" ry="6" fill="#F5A524"/>
+  <ellipse cx="206" cy="202" rx="18" ry="6" fill="#F5A524"/>
+</svg>

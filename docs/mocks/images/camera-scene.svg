@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder camera view: a document lying on a kitchen table">
+  <rect width="300" height="400" fill="#4A3C2C"/>
+  <path d="M0 90h300M0 190h300M0 290h300" stroke="#3E3224" stroke-width="3"/>
+  <g transform="rotate(3 150 200)">
+    <rect x="40" y="64" width="218" height="282" rx="4" fill="#F4F1EA"/>
+    <rect x="60" y="86" width="70" height="14" rx="3" fill="#2E8049"/>
+    <rect x="60" y="120" width="120" height="7" rx="2" fill="#8C8A7A"/>
+    <rect x="60" y="134" width="150" height="7" rx="2" fill="#8C8A7A"/>
+    <rect x="60" y="148" width="100" height="7" rx="2" fill="#8C8A7A"/>
+    <rect x="60" y="182" width="178" height="1.5" fill="#C9C2B4"/>
+    <rect x="60" y="196" width="120" height="6" rx="2" fill="#C9C2B4"/>
+    <rect x="60" y="210" width="100" height="6" rx="2" fill="#C9C2B4"/>
+    <rect x="60" y="224" width="130" height="6" rx="2" fill="#C9C2B4"/>
+  </g>
+</svg>

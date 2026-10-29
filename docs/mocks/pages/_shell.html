@@ -4,7 +4,8 @@
 <!-- @shell:head -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shell — Seedling</title>
+<title>Shell — Seedlings</title>
+<link rel="icon" href="../assets/seedlings-mark-light.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../styles/tokens.css">
 <link rel="stylesheet" href="../styles/app.css">
 <!-- @/shell:head -->
@@ -12,30 +13,46 @@
 <body data-page="_shell" data-shell="app">
 <a class="skip-link" href="#main">Skip to content</a>
 <!-- @shell:topbar -->
+<header class="appbar">
+  <div class="container appbar__inner">
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
+    <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+  </div>
+</header>
 <header class="topbar">
   <div class="container topbar__inner">
-    <a class="topbar__brand" href="./_shell.html"><span class="brand-mark" aria-hidden="true"></span>Seedling</a>
+    <a class="brand" href="./dashboard.html"><img class="brand__logo" src="../assets/seedlings-logo-horizontal-light.svg" alt="Seedlings home"></a>
     <nav class="topbar__nav" aria-label="Primary">
-      <a class="topbar__link" data-nav="home" href="./_shell.html" aria-current="page">Home</a>
+      <a class="topbar__link" data-nav="home" href="./dashboard.html">Home</a>
+      <a class="topbar__link" data-nav="settings" href="./settings.html">Settings</a>
     </nav>
+    <div class="topbar__actions">
+      <a class="btn btn--quiet btn--s" href="./settings.html#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+      <a class="avatar" href="./settings.html" aria-label="Your profile, Jordan Lee">JL</a>
+    </div>
   </div>
 </header>
 <!-- @/shell:topbar -->
 <main class="app-main container" id="main">
   <header class="page-header">
-    <div class="page-header__text">
+    <div>
       <h1 class="page-header__title">Shell</h1>
-      <p class="page-header__subtitle">The canonical skeleton every page copies. Edit the title, the two body data attributes, and which nav link is current.</p>
+      <p class="page-header__subtitle">The canonical skeleton every app page copies. Edit the title, the two body data attributes, and which nav link is current. Bare pages copy only the head region and add the flow header.</p>
     </div>
   </header>
-  <div class="shell-demo">
+  <div class="cluster">
     <button class="btn btn--primary" type="button">Primary</button>
+    <button class="btn btn--secondary" type="button">Secondary</button>
     <button class="btn btn--quiet" type="button">Quiet</button>
+    <button class="btn btn--danger" type="button">Danger</button>
+    <span class="chip chip--success">Paid</span><span class="chip chip--warn">Needs you</span><span class="chip chip--danger">Paused</span><span class="chip chip--mango">Most chosen</span><span class="chip chip--agent"><svg class="icon icon--s" aria-hidden="true"><use href="#i-agent"/></svg>Agent pick</span>
+    <span class="amount">$2,000</span>
   </div>
 </main>
 <!-- @shell:bottomnav -->
 <nav class="bottom-nav" aria-label="Primary">
-  <a class="bottom-nav__item" data-nav="home" href="./_shell.html" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true"></span>Home</a>
+  <a class="bottom-nav__item" data-nav="home" href="./dashboard.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Home</a>
+  <a class="bottom-nav__item" data-nav="settings" href="./settings.html"><span class="bottom-nav__icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a>
 </nav>
 <!-- @/shell:bottomnav -->
 <script src="../app.js"></script>
