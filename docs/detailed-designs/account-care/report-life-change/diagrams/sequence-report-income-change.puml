@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Report an income change
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "LifeChangePage" as page
+  participant "HttpLifeChangesService (LIFE_CHANGES_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "LifeChangesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ReportLifeChangeCommandHandler" as handler
+  participant "IncomeChangeProcessor" as proc
+  participant "EligibilityEvaluator" as elig
+  participant "Sde0093Prefiller" as prefill
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Choose income, Continue, pick new income band, Save
+page -> client : report({kind: Income, incomeBand, clientRequestId})
+client -> controller : POST /api/life-changes
+controller -> handler : Send ReportLifeChangeCommand
+handler -> proc : ProcessAsync(change, command)
+loop each of the parent's cases
+  proc -> db : Load EligibilityAnswers and last EligibilityResult
+  db --> proc : Answers, previous QualifiesForClb
+  proc -> elig : Evaluate(answers with new income band) (L2-025 AC2)
+  elig --> proc : New EligibilityResult
+  proc -> db : Store new EligibilityResult
+  alt newly eligible for CLB and account open
+    proc -> prefill : Prefill SDE 0093 bond claim
+    prefill --> proc : PrefilledForm
+    proc -> db : Set case to ReadyToApprove; nothing sent before approval (L2-020)
+  else newly eligible and no account yet
+    proc -> db : Keep case flow; bond claim joins the pending application
+  else not newly eligible
+    proc -> proc : No claim started
+  end
+end
+proc --> handler : BondClaimStarted or EligibilityUnchanged
+handler -> db : Save LifeChange, audit entry and changes in one unit of work
+db --> handler : Commit result
+handler --> controller : LifeChangeResultDto
+controller --> client : 201 Created
+client --> page : Result
+page --> parent : New bond claim ready to approve, or no change to grants
+@enduml

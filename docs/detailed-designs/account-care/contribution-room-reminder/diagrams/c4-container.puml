@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Contribution room reminder
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(notify, "Push, SMS and email services", "Deliver the reminder")
+
+Rel(worker, provider, "Reads contributions this year", "<TO SUPPLY>")
+Rel(worker, db, "Records one reminder per case per year", "EF Core")
+Rel(worker, notify, "Sends reminder with deep link")
+Rel(parent, pwa, "Opens the reminder, taps Not this year", "HTTPS")
+Rel(pwa, api, "GET current reminder, POST opt-out", "JSON/HTTPS")
+Rel(api, db, "Reads and writes ContributionReminder", "EF Core")
+@enduml

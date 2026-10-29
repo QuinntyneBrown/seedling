@@ -1,0 +1,112 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Human review handoff
+
+enum ReviewReason {
+  NoMatchingProvider
+  ProviderRejected
+  ConfirmationOverdue
+  StepFailed
+  ParentRequested
+}
+
+enum ReturnOutcome {
+  ResumeAgent
+  AskParent
+}
+
+class RespCase {
+  +Guid Id
+  +CaseStatus Status
+  +string CurrentStepKey
+  +HoldForReview(stepKey: string, at: DateTimeOffset): void
+  +ReleaseFromReview(stepKey: string, at: DateTimeOffset): void
+}
+
+class ReviewItem {
+  +Guid Id
+  +Guid CaseId
+  +ReviewReason Reason
+  +string FailedStepKey
+  +string Detail
+  +bool BlocksCase
+  +DateTimeOffset QueuedAt
+  +DateTimeOffset? ResolvedAt
+  +string? ResolvedBy
+  +string? Resolution
+  +Resolve(by: string, note: string, at: DateTimeOffset): void
+}
+
+class AttentionItem {
+  +Guid Id
+  +Guid CaseId
+  +string ItemKey
+  +string Message
+  +DateTimeOffset RaisedAt
+  +DateTimeOffset? ClearedAt
+}
+
+class EnqueueForReviewCommand {
+  +Guid CaseId
+  +ReviewReason Reason
+  +string FailedStepKey
+  +string Detail
+  +bool BlocksCase
+}
+
+class EnqueueForReviewCommandHandler {
+  +Handle(command: EnqueueForReviewCommand): Task<Guid>
+}
+
+class ReturnCaseFromReviewCommand {
+  +Guid ItemId
+  +ReturnOutcome Outcome
+  +string? ParentItemKey
+  +string? ParentMessage
+  +string ResolutionNote
+}
+
+class ReturnCaseFromReviewCommandHandler {
+  +Handle(command: ReturnCaseFromReviewCommand): Task
+}
+
+class CaseAgentResumer {
+  +ResumeAsync(case: RespCase, failedStepKey: string): Task
+}
+
+class ReviewQueueController {
+  +List(): Task<ActionResult<ReviewItemSummaryDto[]>>
+  +Get(itemId: Guid): Task<ActionResult<ReviewCaseDto>>
+  +Return(itemId: Guid, body: ReturnCaseRequest): Task<IActionResult>
+}
+
+interface INotificationDispatcher {
+  +SendAsync(parentId: Guid, kind: string, deepLink: string): Task
+}
+
+RespCase "1" *-- "*" ReviewItem
+RespCase "1" *-- "*" AttentionItem
+ReviewItem --> ReviewReason
+ReturnCaseFromReviewCommand --> ReturnOutcome
+EnqueueForReviewCommandHandler ..> EnqueueForReviewCommand : handles
+EnqueueForReviewCommandHandler ..> ReviewItem : creates
+EnqueueForReviewCommandHandler ..> RespCase : holds
+EnqueueForReviewCommandHandler --> INotificationDispatcher
+ReviewQueueController ..> ReturnCaseFromReviewCommand : sends
+ReturnCaseFromReviewCommandHandler ..> ReturnCaseFromReviewCommand : handles
+ReturnCaseFromReviewCommandHandler ..> ReviewItem : resolves
+ReturnCaseFromReviewCommandHandler ..> AttentionItem : creates for AskParent
+ReturnCaseFromReviewCommandHandler --> CaseAgentResumer
+CaseAgentResumer ..> RespCase : releases
+@enduml

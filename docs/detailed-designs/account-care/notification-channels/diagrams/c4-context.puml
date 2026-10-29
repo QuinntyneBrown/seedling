@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Notification channels
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Chooses push, SMS or email in")
+Rel(seedlings, push, "Sends push messages via", "Web Push, VAPID")
+Rel(seedlings, sms, "Sends text messages via", "provider <TO SUPPLY>")
+Rel(seedlings, email, "Sends email via", "provider <TO SUPPLY>")
+Rel(seedlings, appinsights, "Records delivery latency and failures")
+Rel(push, parent, "Delivers notification")
+Rel(sms, parent, "Delivers text with deep link")
+Rel(email, parent, "Delivers email with deep link")
+@enduml

@@ -1,0 +1,72 @@
+@startuml
+title UML sequence behaviour — Add a child
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardChildrenPage" as page
+  participant "HttpChildrenService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ChildrenController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "AddChildCommandValidator" as validator
+  participant "AddChildCommandHandler" as handler
+  participant "ChildAgePolicy" as policy
+  participant "Child / RespCase" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+actor -> page : Enter first name, last name, date of birth, relationship; tap Add
+page -> page : Check real calendar date, not in future
+page -> client : add(request)
+client -> controller : POST /api/children (bearer)
+controller -> validator : ValidationBehavior runs validator
+alt Date of birth after today (L2-009 #3)
+  validator --> controller : ValidationException (dateOfBirth)
+  controller --> client : 400 ValidationProblemDetails
+  client --> page : Field error
+  page --> actor : Plain-language date error, child not saved
+else Valid request
+  controller -> handler : Send AddChildCommand
+  handler -> policy : IsWithinGrantAge(dateOfBirth, today)
+  alt Age 18 or more (L2-009 #2)
+    policy --> handler : false
+    handler --> controller : BadRequestException child_outside_grant_age
+    controller --> client : 400 ProblemDetails with explanation
+    client --> page : Outside grant age
+    page --> actor : Explanation, no case opened
+  else Under 18
+    policy --> handler : true
+    handler -> db : Find child with same names and date for this parent
+    db --> handler : Match or none
+    alt Repeat of an earlier request
+      handler --> controller : AddChildResult(Created = false)
+      controller --> client : 200 existing childId and caseId
+    else New child (L2-009)
+      handler -> entity : Child.Create(...), RespCase.OpenFor(child) status CheckingEligibility
+      handler -> db : Save Child and RespCase in one unit of work
+      db --> handler : Committed
+      handler --> controller : AddChildResult(Created = true)
+      controller --> client : 201 { childId, caseId, caseStatus }
+    end
+    client --> page : Child added
+    page --> actor : Child listed; dashboard shows one card per case (L2-009 #1)
+  end
+end
+@enduml

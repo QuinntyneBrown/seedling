@@ -1,0 +1,37 @@
+@startuml
+title UML sequence behaviour — Explain a term at first use
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Wizard step page" as page
+  participant "PLAIN_LANGUAGE_GLOSSARY" as glossary
+  participant "sl-term (Term)" as term
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+actor -> page : Open a wizard step
+page -> controller : GET /api/wizard (state, language)
+controller --> page : WizardStateDto
+page -> glossary : Entry for CLB in the parent's language
+glossary --> page : abbr, expansion, explanation
+page -> term : Render first use on this screen (first = true)
+term -> term : L2-042 write "Canada Learning Bond (CLB), free money from the government for ..."
+term --> page : Expanded text
+page -> term : Render later use (first = false)
+term --> page : abbr element with expansion as accessible name
+page --> actor : Screen with every acronym explained once
+@enduml

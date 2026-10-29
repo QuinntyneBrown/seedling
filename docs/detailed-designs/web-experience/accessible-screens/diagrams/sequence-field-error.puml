@@ -1,0 +1,49 @@
+@startuml
+title UML sequence behaviour — Show and announce a field error
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent (screen reader)" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Form page" as page
+  participant "sl-text-field" as field
+  participant "FormErrorFocus" as errfocus
+  participant "LiveAnnouncer (CDK)" as announcer
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Feature controller" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ValidationBehavior + validator" as validator
+end box
+actor -> page : Submit the form
+alt Client-side rule fails
+  page -> field : error = catalog message
+else Server rejects the input
+  page -> controller : POST or PUT answers
+  controller -> validator : Send command through ValidationBehavior
+  validator --> controller : ValidationException
+  controller --> page : 400 ProblemDetails with errors keyed by field
+  page -> page : ProblemDetailsMapper.toFieldErrors()
+  page -> field : error = mapped catalog message
+end
+field -> field : aria-invalid="true"; aria-describedby = hint id + fieldId-error
+field -> field : Write message into the aria-live="polite" container
+field --> actor : Message announced (L2-049 criterion 3)
+page -> errfocus : focusFirstInvalid(form, count)
+errfocus -> field : focus()
+field --> actor : Reads label, "invalid", and the error description
+errfocus -> announcer : announce("2 answers need a fix", polite)
+announcer --> actor : Count announced
+@enduml

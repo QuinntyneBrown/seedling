@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Language and reading level
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling); en.json and fr.json catalogs")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+Rel(parent, pwa, "Uses in English or French", "HTTPS")
+Rel(pwa, api, "PUT /api/account/language; Accept-Language on every call", "JSON/HTTPS")
+Rel(api, db, "Stores ParentAccount.Language", "EF Core")
+Rel(worker, db, "Reads ParentAccount.Language for reminders", "EF Core")
+Rel(api, email, "Sends localized templates", "HTTPS")
+Rel(api, sms, "Sends localized templates", "HTTPS")
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — Flag a deposit missing after 90 days
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "DepositCheckJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "FlagOverdueDepositsCommandHandler" as handler
+  participant "DepositOverduePolicy" as policy
+  participant "ExpectedDeposit" as entity
+  participant "INotificationDispatcher" as dispatch
+  participant "IAuditTrail" as audit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor "Parent" as parent
+job -> handler : Send FlagOverdueDepositsCommand (daily run)
+handler -> db : Load ExpectedDeposits with ReceivedAt null and OverdueFlaggedAt null
+db --> handler : Candidate deposits
+loop each candidate
+  handler -> policy : IsOverdue(deposit, now) — ClaimedAt + 90 days <= now (L2-023 AC2)
+  policy --> handler : true or false
+  opt overdue
+    handler -> entity : MarkOverdue(now)
+    handler -> db : Add ReviewItem(Reason "DepositOverdue", FailedStepKey "deposit-check") (L2-022)
+    handler -> audit : Append "Deposit missing, sent to review"
+    handler -> db : Save changes in one unit of work
+    db --> handler : Commit result
+    handler -> dispatch : DispatchAsync(DepositOverdue, deep link /cases/{caseId}) (L2-026)
+    dispatch --> parent : Alert on chosen channel
+  end
+end
+handler --> job : Count flagged
+@enduml

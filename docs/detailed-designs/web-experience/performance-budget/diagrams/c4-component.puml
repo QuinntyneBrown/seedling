@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Performance budget
+
+Container_Boundary(build, "Frontend build and CI") {
+  Component(ngbuild, "ng build seedling --configuration production", "Angular CLI", "Emits dist/seedling/browser")
+  Component(size, "check-bundle-size.mjs", "Node script", "Sum of gzipped initial JS < 300,000 bytes")
+  Component(lhci, "lighthouserc.cjs + sign-in.cjs", "Lighthouse CI", "Mobile emulation; interactive <= 4000 ms; score >= 0.8")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(casesCtrl, "CasesController", "ASP.NET Core controller", "Case list endpoint (case-status-dashboard)")
+  Component(intakeCtrl, "IntakeController", "ASP.NET Core controller", "Intake save endpoint (complete-intake-steps)")
+  Component(timing, "RequestTimingBehavior", "MediatR pipeline behaviour", "Handler duration histogram by request type")
+  Component(listHandler, "ListCasesQueryHandler", "MediatR handler", "AsNoTracking projection by ParentAccountId")
+  Component(saveHandler, "SaveIntakeFieldCommandHandler", "MediatR handler", "Upsert one IntakeField")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "IX_RespCases_ParentAccountId; unique (CaseId, StepKey, FieldKey)")
+}
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+Rel(ngbuild, size, "Output measured by")
+Rel(ngbuild, lhci, "Output served to")
+Rel(casesCtrl, timing, "Sends query through")
+Rel(intakeCtrl, timing, "Sends command through")
+Rel(timing, listHandler, "Times")
+Rel(timing, saveHandler, "Times")
+Rel(listHandler, db, "One indexed read", "EF Core")
+Rel(saveHandler, db, "One upsert", "EF Core")
+Rel(timing, appinsights, "Exports histogram", "OpenTelemetry")
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Sensitive data vault
+
+Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+Container_Boundary(api, "Seedlings API") {
+  Component(vctrl, "VaultController", "ASP.NET Core controller", "/api/cases/{caseId}/sins and /api/cases/{caseId}/documents")
+  Component(actrl, "ReauthenticationController", "ASP.NET Core controller", "/api/auth/reauthenticate")
+  Component(policy, "RecentAuthenticationHandler", "Authorization handler", "Requires auth_time within 5 minutes")
+  Component(result, "ReauthenticationResultHandler", "IAuthorizationMiddlewareResultHandler", "Answers 403 reauthentication_required")
+  Component(reveal, "RevealSinQueryHandler", "MediatR handler", "Reveals one SIN for its owner")
+  Component(masked, "GetMaskedSinsQueryHandler", "MediatR handler", "Lists last 3 digits")
+  Component(port, "ISensitiveDataVault", "Application port", "Vault operations, each taking a VaultAccess")
+  Component(impl, "SensitiveDataVault", "Infrastructure service", "Encrypts, decrypts, logs every read")
+  Component(protector, "DataProtectionFieldProtector", "IFieldProtector", "ASP.NET Core Data Protection")
+  Component(vctx, "VaultDbContext", "EF Core, schema vault", "SinRecord, IdentityDocument, VaultAccessLogEntry")
+  Component(blobs, "IDocumentBlobStore", "Infrastructure port", "Encrypted document bytes")
+}
+ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+
+Rel(pwa, vctrl, "Calls", "JSON/HTTPS")
+Rel(pwa, actrl, "Confirms code", "JSON/HTTPS")
+Rel(vctrl, policy, "Reveal endpoints require RecentAuthentication")
+Rel(policy, result, "Failure handled by")
+Rel(vctrl, reveal, "Sends RevealSinQuery")
+Rel(vctrl, masked, "Sends GetMaskedSinsQuery")
+Rel(reveal, port, "RevealSinAsync")
+Rel(masked, port, "GetMaskedSinsAsync")
+Rel(impl, port, "Implements")
+Rel(impl, protector, "Unprotects")
+Rel(impl, vctx, "Reads rows; appends VaultAccessLogEntry")
+Rel(impl, blobs, "Reads and writes document bytes")
+Rel(vctx, vault, "SQL", "TLS")
+Rel(blobs, vault, "Blob", "TLS")
+@enduml

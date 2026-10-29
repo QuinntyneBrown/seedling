@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Switch language in settings
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "SettingsPage" as page
+  participant "I18nStore" as store
+  participant "HttpAccountService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AccountController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ChangeLanguageCommandHandler" as handler
+  participant "ParentAccount" as entity
+  participant "INotificationDispatcher" as dispatch
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "Email / SMS / Web Push" as channels
+end box
+actor -> page : Press Français
+page -> store : use(Fr)
+store -> store : Load fr.json; html lang = fr; aria-pressed updates
+store --> page : Screens redraw in French
+page -> client : changeLanguage(Fr)
+client -> controller : PUT /api/account/language { language: Fr }
+controller -> controller : Authenticate; validate with ChangeLanguageCommandValidator
+controller -> handler : Send ChangeLanguageCommand
+handler -> db : Load the caller's ParentAccount
+db --> handler : ParentAccount
+handler -> entity : ChangeLanguage(Fr)
+handler -> db : Save
+db --> handler : Committed
+handler --> controller : Done
+controller --> client : 204 No Content
+client --> page : Saved
+page --> actor : Every screen in French (L2-027 criterion 3)
+== Later, a notification is due ==
+dispatch -> db : Read recipient ParentAccount.Language
+db --> dispatch : Fr
+dispatch -> channels : Send French template (L2-027 criterion 3)
+@enduml

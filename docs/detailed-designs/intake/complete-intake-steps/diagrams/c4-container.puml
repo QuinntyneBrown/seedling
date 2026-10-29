@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Complete intake steps
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+  ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+}
+System_Ext(addresslookup, "Address lookup service", "Provider <TO SUPPLY>")
+Rel(parent, pwa, "Fills one intake step per screen", "HTTPS")
+Rel(pwa, idb, "Queues field saves while offline")
+Rel(pwa, api, "PUT field, POST advance, PUT SIN", "JSON/HTTPS")
+Rel(api, db, "IntakeField, WizardProgress, Child, ParentAccount", "EF Core")
+Rel(api, vault, "Stores SINs", "via ISensitiveDataVault")
+Rel(api, addresslookup, "Finds addresses", "HTTPS")
+@enduml

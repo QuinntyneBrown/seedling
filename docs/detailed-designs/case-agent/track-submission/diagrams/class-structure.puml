@@ -1,0 +1,98 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Track a submission
+
+enum ProviderApplicationState {
+  Pending
+  Confirmed
+  Rejected
+  Unknown
+}
+
+class ProviderApplicationStatus {
+  +ProviderApplicationState State
+  +string? AccountNumber
+  +string? RejectionReason
+  +string? ItemKey
+}
+
+interface IProviderGateway {
+  +SubmitApplicationAsync(package: SubmissionPackage): Task<ProviderReceipt>
+  +GetApplicationStatusAsync(externalReference: string): Task<ProviderApplicationStatus>
+}
+
+class TrackSubmissionsJob {
+  +ExecuteAsync(stoppingToken: CancellationToken): Task
+}
+
+class CheckPendingSubmissionsCommandHandler {
+  +OverdueAfterBusinessDays: int = 15
+  +Handle(command: CheckPendingSubmissionsCommand): Task<CheckSummary>
+}
+
+class ConfirmAccountOpenedCommand {
+  +Guid SubmissionId
+  +string AccountNumber
+}
+
+class ConfirmAccountOpenedCommandHandler {
+  +Handle(command: ConfirmAccountOpenedCommand): Task
+}
+
+class BusinessCalendar {
+  +BusinessDaysBetween(from: DateOnly, to: DateOnly): int
+}
+
+interface IDateTimeProvider {
+  +UtcNow: DateTimeOffset
+}
+
+class Submission {
+  +Guid Id
+  +Guid CaseId
+  +SubmissionTarget Target
+  +DateTimeOffset SubmittedAt
+  +string? ExternalReference
+  +DateTimeOffset? ConfirmedAt
+  +DateTimeOffset? FlaggedAt
+  +Confirm(at: DateTimeOffset): void
+  +Flag(at: DateTimeOffset): void
+}
+
+class RespCase {
+  +Guid Id
+  +CaseStatus Status
+  +string? AccountNumber
+  +MarkAccountOpen(accountNumber: string, at: DateTimeOffset): void
+}
+
+class AccountOpened <<notification>> {
+  +Guid CaseId
+  +DateTimeOffset At
+}
+
+TrackSubmissionsJob ..> CheckPendingSubmissionsCommandHandler : sends command
+CheckPendingSubmissionsCommandHandler --> IProviderGateway
+CheckPendingSubmissionsCommandHandler --> BusinessCalendar
+CheckPendingSubmissionsCommandHandler --> IDateTimeProvider
+CheckPendingSubmissionsCommandHandler ..> Submission : flags
+CheckPendingSubmissionsCommandHandler ..> ConfirmAccountOpenedCommand : sends
+ConfirmAccountOpenedCommandHandler ..> ConfirmAccountOpenedCommand : handles
+ConfirmAccountOpenedCommandHandler ..> Submission : confirms
+ConfirmAccountOpenedCommandHandler ..> RespCase : opens
+ConfirmAccountOpenedCommandHandler ..> AccountOpened : publishes
+IProviderGateway ..> ProviderApplicationStatus : returns
+ProviderApplicationStatus --> ProviderApplicationState
+RespCase "1" *-- "*" Submission
+@enduml

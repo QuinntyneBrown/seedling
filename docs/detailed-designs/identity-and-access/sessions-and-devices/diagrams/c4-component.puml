@@ -1,0 +1,37 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Sessions and devices
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(settings, "SettingsPage", "Angular page", "Sign out and Sign out of all devices")
+  Component(interceptor, "authInterceptor", "Angular HTTP interceptor", "Bearer header, one renewal and retry on 401")
+  Component(store, "BrowserSessionStore", "SESSION_STORE", "Tokens, timed renewal, cross-tab lock")
+  Component(guard, "require-auth.guard.ts", "Route guard", "Admits signed-in parents")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(validator, "SessionVersionValidator", "JwtBearerEvents.OnTokenValidated", "Rejects tokens with a stale sv claim")
+  Component(auth, "AuthController", "ASP.NET Core controller", "/api/auth/refresh, sign-out, sign-out-all")
+  Component(account, "AccountController", "ASP.NET Core controller", "/api/me/resume-point")
+  Component(refresh, "RefreshSessionCommandHandler", "MediatR handler", "Rotation and reuse detection")
+  Component(signoutall, "SignOutAllDevicesCommandHandler", "MediatR handler", "Bumps session version, revokes tokens")
+  Component(resume, "GetResumePointQueryHandler", "MediatR handler", "Wizard step, intake step or dashboard")
+  Component(issuer, "JwtSessionIssuer", "ISessionIssuer", "Signs access tokens, mints refresh tokens")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "RefreshToken, ParentAccount, WizardProgress, RespCase")
+}
+
+Rel(settings, store, "Signs out through")
+Rel(guard, store, "Checks session")
+Rel(interceptor, store, "Reads token, awaits renew()")
+Rel(store, auth, "POST /api/auth/refresh", "JSON/HTTPS")
+Rel(interceptor, validator, "Bearer requests", "JSON/HTTPS")
+Rel(validator, db, "Reads SessionVersion", "EF Core")
+Rel(auth, refresh, "Sends RefreshSessionCommand")
+Rel(auth, signoutall, "Sends SignOutAllDevicesCommand")
+Rel(account, resume, "Sends GetResumePointQuery")
+Rel(refresh, issuer, "Mints next token")
+Rel(signoutall, issuer, "Issues session for caller")
+Rel(refresh, db, "Reads and writes RefreshToken", "EF Core")
+Rel(signoutall, db, "Writes ParentAccount, RefreshToken", "EF Core")
+Rel(resume, db, "Reads progress", "EF Core")
+@enduml

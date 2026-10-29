@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Accessible screens
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Ext(at, "Assistive technology", "Screen readers (NVDA, VoiceOver, TalkBack), keyboard, switch access, text zoom")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+
+Rel(parent, at, "Operates Seedlings through")
+Rel(at, seedlings, "Reads roles, names, states and live regions of", "Browser accessibility tree")
+Rel(parent, seedlings, "Uses by touch or pointer")
+@enduml

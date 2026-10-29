@@ -1,0 +1,32 @@
+@startuml
+title UML sequence behaviour — Refuse a TLS 1.0 or 1.1 client
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Legacy client" as actor
+box "Backend — Seedlings API application" #D1FADF
+  participant "App Service front end" as front
+  participant "Seedlings API pipeline" as pipeline
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> front : TLS ClientHello offering TLS 1.0 or 1.1 only
+front -> front : Compare with minTlsVersion 1.2 (L2-031 AC3)
+front --> actor : Handshake failure alert; connection closed
+note over pipeline : No request reaches the API pipeline
+actor -> db : TDS connection offering TLS 1.1
+db -> db : Compare with minimalTlsVersion 1.2
+db --> actor : Connection refused
+@enduml

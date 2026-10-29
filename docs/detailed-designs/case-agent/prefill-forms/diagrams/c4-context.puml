@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Pre-fill the forms
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Checks and corrects the pre-filled forms", "HTTPS")
+Rel(seedlings, provider, "Later receives the RESP application, only after approval (L2-020)")
+Rel(seedlings, esdc, "Later receives SDE 0093, only after approval (L2-020); channel <TO SUPPLY>")
+@enduml

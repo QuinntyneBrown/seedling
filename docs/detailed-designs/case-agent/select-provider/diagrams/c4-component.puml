@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Select a provider
+
+Container(pwa, "Seedlings PWA", "Angular 21", "ProviderPage via CASE_AGENT_SERVICE")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ProviderSelectionController", "ASP.NET Core controller", "POST provider-selection, PUT provider")
+  Component(selectHandler, "SelectProviderCommandHandler", "MediatR handler", "Loads the case, matches, saves or routes to review")
+  Component(acceptHandler, "AcceptProviderCommandHandler", "MediatR handler", "Records the parent's acceptance")
+  Component(rules, "ProviderRulesEngine", "Domain service", "Applies the three L2-017 predicates")
+  Component(policy, "ProviderReasonPolicy", "Domain service", "Two-sentence check and fixed fallback")
+  Component(agent, "FoundryCaseAgent", "ICaseAgent implementation", "Calls Claude for reason wording")
+  Component(review, "EnqueueForReviewCommandHandler", "MediatR handler", "Queues the case for a reviewer")
+  Component(audit, "IAuditTrail", "Application service", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Provider, ProviderRecommendation, RespCase, AuditEntry")
+}
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Claude deployment")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, selectHandler, "Sends SelectProviderCommand")
+Rel(ctrl, acceptHandler, "Sends AcceptProviderCommand")
+Rel(selectHandler, rules, "Matches providers")
+Rel(selectHandler, agent, "WriteProviderReasonAsync")
+Rel(selectHandler, policy, "Checks reason")
+Rel(selectHandler, review, "Sends EnqueueForReviewCommand on no match")
+Rel(selectHandler, audit, "Appends ProviderRecommended")
+Rel(acceptHandler, audit, "Appends ProviderAccepted")
+Rel(selectHandler, db, "Reads and writes", "EF Core")
+Rel(acceptHandler, db, "Writes", "EF Core")
+Rel(agent, foundry, "Messages API", "HTTPS")
+@enduml

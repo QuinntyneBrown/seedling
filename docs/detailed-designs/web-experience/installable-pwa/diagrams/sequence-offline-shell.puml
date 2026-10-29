@@ -1,0 +1,44 @@
+@startuml
+title UML sequence behaviour — Open the app offline
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser" as browser
+  participant "ngsw-worker.js" as sw
+  database "Cache Storage (ngsw app group)" as cache
+  participant "App (app-root)" as shell
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "Azure Static Web App" as swa
+end box
+== First visit, online ==
+actor -> browser : Open Seedlings
+browser -> swa : GET /, *.js, *.css
+swa --> browser : App shell
+browser -> sw : Register ngsw-worker.js (registerWhenStable:30000)
+sw -> swa : GET ngsw.json and every file in the app asset group
+swa --> sw : Shell files, fonts, icons
+sw -> cache : Precache shell version (L2-002)
+== Later visit, offline ==
+actor -> browser : Launch from home screen
+browser -> sw : Navigation request /
+sw -> sw : Network unavailable; answer from precache
+sw -> cache : Read index.html and shell files
+cache --> sw : Cached shell
+sw --> browser : Shell from cache (L2-002 criterion 1)
+browser -> shell : Bootstrap Angular
+shell --> actor : Frame, navigation and offline banner rendered
+@enduml

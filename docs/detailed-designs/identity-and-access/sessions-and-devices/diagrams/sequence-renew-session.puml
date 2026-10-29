@@ -1,0 +1,74 @@
+@startuml
+title UML sequence behaviour — Renew a session
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Any page" as page
+  participant "authInterceptor" as interceptor
+  participant "BrowserSessionStore" as store
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AuthController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RefreshSessionCommandHandler" as handler
+  participant "RefreshToken" as token
+  participant "ISessionIssuer" as issuer
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+alt 60 s before access token expiry
+  store -> store : Timer fires
+else API answers 401 to a bearer request
+  page -> interceptor : HTTP request
+  interceptor --> interceptor : 401 received, await shared renew()
+end
+store -> store : navigator.locks.request('seedling-session-renew')
+store -> store : Re-read stored refresh token
+opt Another tab already renewed
+  store --> interceptor : Adopt pair from BroadcastChannel, skip API call
+end
+store -> controller : POST /api/auth/refresh { refreshToken }
+controller -> handler : Send RefreshSessionCommand
+handler -> db : Find RefreshToken by SHA-256 hash
+db --> handler : Token or none
+alt None, expired or revoked
+  handler --> controller : UnauthorizedException refresh_token_invalid
+  controller --> store : 401 ProblemDetails
+  store -> store : Clear session
+  store --> actor : Sign-in page with returnUrl
+else Already consumed: reuse (L2-044 #2)
+  handler -> db : Revoke every token with the same FamilyId
+  db --> handler : Committed
+  handler --> controller : UnauthorizedException refresh_token_reused
+  controller --> store : 401 ProblemDetails
+  store -> store : Clear session
+  store --> actor : Sign-in page
+else Live token (L2-044 #1)
+  handler -> token : Consume(now, next)
+  handler -> issuer : RotateAsync(account, token)
+  issuer --> handler : SessionTokens (15-minute access token, same family)
+  handler -> db : Save consumed and new token in one unit of work
+  db --> handler : Committed
+  handler --> controller : SessionTokens
+  controller --> store : 200 SessionTokens
+  store -> store : Persist pair, post on BroadcastChannel, release lock
+  store --> interceptor : New access token
+  interceptor -> page : Retry original request once, parent not interrupted
+end
+@enduml

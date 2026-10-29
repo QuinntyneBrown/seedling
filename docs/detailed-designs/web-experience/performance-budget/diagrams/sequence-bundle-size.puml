@@ -1,0 +1,43 @@
+@startuml
+title UML sequence behaviour — Check the gzipped bundle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Contributor" as actor
+box "Frontend — Seedlings workspace build" #E0F2FE
+  participant "GitHub Actions CI (ci.yml)" as ci
+  participant "Angular CLI" as ng
+  participant "check-bundle-size.mjs" as script
+  participant "dist/seedling/browser" as dist
+end box
+actor -> ci : Open or update a pull request
+ci -> ng : ng build seedling --configuration production
+ng -> dist : Write index.html, initial and lazy chunks
+ng --> ci : Build complete (raw initial budget warns early)
+ci -> script : npm run size:check
+script -> dist : Read index.html
+script -> script : Collect script type=module and link rel=modulepreload targets
+loop Each initial JavaScript file
+  script -> dist : Read file
+  script -> script : zlib gzip level 9; add size
+end
+script -> script : Print per-file table and total
+alt Total < 300,000 bytes
+  script --> ci : Exit 0
+  ci --> actor : Budget met (L2-006 criterion 1)
+else Total >= 300,000 bytes
+  script --> ci : Exit 1
+  ci --> actor : Build fails (L2-006 criterion 1)
+end
+@enduml

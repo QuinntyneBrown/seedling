@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Responsive layout
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Container_Boundary(ds, "Design system library (frontend/projects/components)") {
+  Component(bp, "_breakpoints.scss respond-to()", "SCSS mixin", "xs < 36rem, sm 36rem, md 48rem, lg 62rem, xl 75rem")
+  Component(resp, "tokens/themes/responsive.ts", "Token overrides", "layoutGutter and type retunes at md and lg")
+  Component(global, "_global.scss", "Layout foundations", ".container (max 1120px), .grid-2, .stack, .cluster, .flow, overflow rules")
+  Component(target, "--sl-target-min", "Component token", "44px minimum under (pointer: coarse)")
+  Component(topbar, "sl-top-bar (TopBar)", "Component", "Top bar from md")
+  Component(bottomnav, "sl-bottom-nav (BottomNav)", "Component", "Bottom navigation below md")
+}
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(shell, "App (app-root)", "Angular component", "Renders both navs; CSS shows one")
+  Component(dash, "DashboardPage", "Angular page", "Case grid with .grid-2")
+  Component(step, "Wizard and intake pages", "Angular pages", "Hold in-progress form input")
+}
+Rel(parent, shell, "Resizes, rotates, taps")
+Rel(shell, topbar, "Renders")
+Rel(shell, bottomnav, "Renders")
+Rel(dash, global, "Uses .container and .grid-2")
+Rel(step, global, "Uses .flow and .flow__aside")
+Rel(global, bp, "Uses respond-to()")
+Rel(topbar, bp, "Uses respond-to(md)")
+Rel(bottomnav, bp, "Uses respond-to(md)")
+Rel(topbar, target, "Applies")
+Rel(bottomnav, target, "Applies")
+Rel(resp, bp, "Mirrors breakpoints")
+@enduml

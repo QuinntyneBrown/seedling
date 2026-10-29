@@ -1,0 +1,48 @@
+@startuml
+title UML sequence behaviour — Read the case list
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "DashboardPage" as page
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RequestTimingBehavior" as timing
+  participant "ListCasesQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "Application Insights" as ai
+end box
+actor -> page : Open Home
+page -> client : list()
+client -> controller : GET case list
+controller -> controller : Authenticate; resolve ParentAccountId
+controller -> timing : Send ListCasesQuery
+timing -> timing : Start stopwatch
+timing -> handler : next()
+handler -> db : AsNoTracking Select projection WHERE ParentAccountId (IX_RespCases_ParentAccountId)
+db --> handler : Rows in one round trip
+handler --> timing : CaseSummaryDto list; no external call made
+timing -> ai : Record duration, tag ListCasesQuery
+timing --> controller : Result
+controller --> client : 200 JSON (p95 < 500 ms at 50 parents, L2-048 criterion 1)
+client --> page : Cases
+page --> actor : Dashboard
+@enduml

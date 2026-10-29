@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Sign up and verify
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Signs up and enters one-time code", "HTTPS")
+Rel(seedlings, email, "Sends 6-digit code by email", "HTTPS")
+Rel(seedlings, sms, "Sends 6-digit code by SMS", "HTTPS")
+Rel(email, parent, "Delivers code")
+Rel(sms, parent, "Delivers code")
+Rel(seedlings, appinsights, "Writes redacted telemetry")
+@enduml

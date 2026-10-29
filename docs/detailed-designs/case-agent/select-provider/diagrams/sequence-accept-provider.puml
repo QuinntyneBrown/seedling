@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Accept the recommended provider
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ProviderPage" as page
+  participant "HttpCaseAgentService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ProviderSelectionController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "AcceptProviderCommandHandler" as handler
+  participant "RespCase" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Use <provider>
+page -> client : acceptProvider(caseId, providerId)
+client -> controller : PUT /api/cases/{caseId}/provider
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send AcceptProviderCommand
+handler -> db : Load RespCase and ProviderRecommendation for current parent
+db --> handler : Case and recommendation
+alt providerId differs from the recommendation
+  handler --> controller : BadRequestException provider_not_recommended
+  controller --> client : 400 ProblemDetails
+else already accepted
+  handler --> controller : No change
+  controller --> client : 204
+else first acceptance
+  handler -> entity : AssignProvider(providerId), CurrentStepKey = form-review
+  entity --> handler : Updated case
+  handler -> db : Save recommendation AcceptedAt and AuditEntry ProviderAccepted
+  db --> handler : Commit
+  handler --> controller : Done
+  controller --> client : 204
+end
+client --> page : Result
+page --> actor : Navigate to Check the forms
+@enduml

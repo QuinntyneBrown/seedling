@@ -1,0 +1,101 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Add a child
+
+enum ChildRelationship {
+  Parent
+  LegalGuardian
+}
+
+enum CaseStatus {
+  CheckingEligibility
+  CollectingDocuments
+  ReadyToApprove
+  Submitted
+  AccountOpen
+  BondClaimed
+  NeedsAttention
+  Complete
+}
+
+class Child {
+  +Guid Id
+  +Guid ParentAccountId
+  +string FirstName
+  +string LastName
+  +DateOnly DateOfBirth
+  +ChildRelationship Relationship
+  +DateTimeOffset CreatedAt
+  +{static} Create(parentAccountId, firstName, lastName, dateOfBirth, relationship, now): Child
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid ChildId
+  +CaseStatus Status
+  +DateTimeOffset StatusChangedAt
+  +string CurrentStepKey
+  +{static} OpenFor(child: Child, now: DateTimeOffset): RespCase
+}
+
+class ChildAgePolicy {
+  +int GrantAgeLimit = 18
+  +AgeOn(dateOfBirth: DateOnly, today: DateOnly): int
+  +IsWithinGrantAge(dateOfBirth: DateOnly, today: DateOnly): bool
+}
+
+class AddChildCommand {
+  +string FirstName
+  +string LastName
+  +DateOnly DateOfBirth
+  +ChildRelationship Relationship
+}
+
+class AddChildCommandValidator {
+  +AddChildCommandValidator(clock: IDateTimeProvider)
+}
+
+class AddChildCommandHandler {
+  +Handle(command: AddChildCommand): Task<AddChildResult>
+}
+
+class AddChildResult {
+  +Guid ChildId
+  +Guid CaseId
+  +CaseStatus CaseStatus
+  +bool Created
+}
+
+interface ICurrentUser {
+  +Guid? ParentAccountId
+}
+
+interface IDateTimeProvider {
+  +DateTimeOffset UtcNow
+}
+
+Child "1" -- "1" RespCase : has
+Child --> ChildRelationship : has
+RespCase --> CaseStatus : has
+AddChildCommandValidator ..> AddChildCommand : validates
+AddChildCommandValidator ..> IDateTimeProvider : reads today
+AddChildCommandHandler ..> AddChildCommand : handles
+AddChildCommandHandler --> ChildAgePolicy : checks
+AddChildCommandHandler ..> Child : creates
+AddChildCommandHandler ..> RespCase : opens
+AddChildCommandHandler ..> AddChildResult : returns
+AddChildCommandHandler ..> ICurrentUser : reads tenant
+AddChildCommandHandler ..> IDateTimeProvider : reads today
+@enduml

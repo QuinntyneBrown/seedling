@@ -1,0 +1,103 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Case status dashboard
+
+enum CaseStatus {
+  CheckingEligibility
+  CollectingDocuments
+  ReadyToApprove
+  Submitted
+  AccountOpen
+  BondClaimed
+  NeedsAttention
+  Complete
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid ChildId
+  +CaseStatus Status
+  +DateTimeOffset StatusChangedAt
+  +string CurrentStepKey
+  +DateTimeOffset? PausedAt
+  +TransitionTo(next: CaseStatus, at: DateTimeOffset): void
+}
+
+class CaseStatusTransitions {
+  +IsAllowed(from: CaseStatus, to: CaseStatus): bool
+}
+
+class CaseStatusContext {
+  +CaseStatus Status
+  +bool IsPaused
+  +bool IsFlagged
+  +bool InReview
+  +AttentionItem? AttentionItem
+  +string ChildFirstName
+  +string? ProviderName
+}
+
+class CaseStatusView {
+  +string LabelKey
+  +string Explanation
+  +NextAction NextAction
+  +AttentionItemDto? AttentionItem
+}
+
+class NextAction {
+  +string Text
+  +bool NothingNeeded
+  +string? Route
+}
+
+class CaseStatusPresenter {
+  +Present(context: CaseStatusContext, language: Language): CaseStatusView
+}
+
+class ListCasesQueryHandler {
+  +Handle(query: ListCasesQuery): Task<IReadOnlyList<CaseSummaryDto>>
+}
+
+class GetCaseQueryHandler {
+  +Handle(query: GetCaseQuery): Task<CaseDetailDto>
+}
+
+class CaseSummaryDto {
+  +Guid CaseId
+  +string ChildFirstName
+  +CaseStatusView Status
+  +decimal? Received
+  +decimal? StillToCome
+}
+
+class CaseDetailDto {
+  +CaseStatusView Status
+  +IReadOnlyList<MilestoneDto> Timeline
+  +IReadOnlyList<ActivityDto> Activity
+  +IReadOnlyList<GrantDto> Grants
+}
+
+RespCase --> CaseStatus : has exactly one
+RespCase ..> CaseStatusTransitions : checks
+CaseStatusPresenter ..> CaseStatusContext : reads
+CaseStatusPresenter ..> CaseStatusView : creates
+CaseStatusView *-- NextAction
+ListCasesQueryHandler --> CaseStatusPresenter
+GetCaseQueryHandler --> CaseStatusPresenter
+ListCasesQueryHandler ..> CaseSummaryDto : returns
+GetCaseQueryHandler ..> CaseDetailDto : returns
+CaseSummaryDto *-- CaseStatusView
+CaseDetailDto *-- CaseStatusView
+@enduml

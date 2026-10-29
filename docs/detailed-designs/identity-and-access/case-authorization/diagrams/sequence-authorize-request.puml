@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Authorize a parent request
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent A" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Case page" as page
+  participant "authInterceptor" as interceptor
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "JWT bearer handler" as bearer
+  participant "Fallback policy" as policy
+  participant "CasesController" as controller
+  participant "HttpCurrentUser" as current
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetCaseQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "AppDbContext" as ctx
+  database "Seedlings database" as db
+end box
+
+actor -> page : Open /cases/{caseId}
+page -> interceptor : GET /api/cases/{caseId}
+interceptor -> bearer : Request with or without bearer token
+alt No token, bad signature, expired or stale sv (L2-045 #1)
+  bearer --> policy : Unauthenticated principal
+  policy --> interceptor : 401 ProblemDetails via OnChallenge
+  interceptor --> page : Renew once, else sign-in page
+else Valid token
+  bearer -> policy : Authenticated principal
+  policy -> controller : RequireAuthenticatedUser satisfied
+  controller -> handler : Send GetCaseQuery(caseId)
+  handler -> ctx : Cases.FirstOrDefaultAsync(c => c.Id == caseId)
+  ctx -> current : ParentAccountId
+  current --> ctx : Parent A
+  ctx -> db : WHERE Id = caseId AND ParentAccountId = Parent A
+  db --> ctx : Row or none
+  alt Case belongs to parent B or does not exist (L2-045 #2)
+    ctx --> handler : null
+    handler --> controller : NotFoundException
+    controller --> interceptor : 404 ProblemDetails, no case data
+    interceptor --> page : Not found
+    page --> actor : Not-found state
+  else Case belongs to parent A
+    ctx --> handler : RespCase
+    handler --> controller : CaseDto
+    controller --> interceptor : 200 CaseDto
+    interceptor --> page : Case
+    page --> actor : Case details
+  end
+end
+@enduml

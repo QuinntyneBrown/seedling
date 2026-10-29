@@ -1,0 +1,34 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Sign up and verify
+
+Container(pwa, "Seedlings PWA", "Angular 21", "SignUpPage, SignInPage, VerifyCodePage, HttpAuthService")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "AuthController", "ASP.NET Core controller", "Anonymous /api/auth/codes endpoints")
+  Component(mw, "ExceptionHandlingMiddleware", "Middleware", "Maps exceptions to ProblemDetails, 429 included")
+  Component(reqh, "RequestVerificationCodeCommandHandler", "MediatR handler", "Normalizes, limits, creates challenge, sends code")
+  Component(val, "RequestVerificationCodeCommandValidator", "FluentValidation", "Email and mobile number format")
+  Component(limiter, "VerificationRateLimiter", "Application service", "3 per destination and 20 per IP per hour")
+  Component(verh, "VerifyCodeCommandHandler", "MediatR handler", "Judges the code, finds or creates the account")
+  Component(issuer, "ISessionIssuer", "Port (sessions-and-devices)", "Issues access and refresh tokens")
+  Component(sender, "IVerificationCodeSender", "Port", "Email and SMS sender adapters")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "VerificationChallenge, ParentAccount")
+}
+System_Ext(email, "Email service", "Delivers codes")
+System_Ext(sms, "SMS service", "Delivers codes")
+
+Rel(pwa, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, reqh, "Sends RequestVerificationCodeCommand")
+Rel(reqh, val, "Validated by", "ValidationBehavior")
+Rel(reqh, limiter, "Asks permission")
+Rel(reqh, sender, "Sends code")
+Rel(ctrl, verh, "Sends VerifyCodeCommand")
+Rel(verh, issuer, "Issues session")
+Rel(limiter, db, "Counts recent challenges", "EF Core")
+Rel(reqh, db, "Writes challenge", "EF Core")
+Rel(verh, db, "Reads challenge, writes account", "EF Core")
+Rel(sender, email, "Email channel", "HTTPS")
+Rel(sender, sms, "Sms channel", "HTTPS")
+Rel(mw, ctrl, "Wraps")
+@enduml

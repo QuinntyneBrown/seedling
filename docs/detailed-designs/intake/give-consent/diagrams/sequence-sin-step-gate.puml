@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Open a SIN step behind the consent gate
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "ConsentGate" as gate
+  participant "HttpConsentService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ConsentsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetConsentsQueryHandler" as query
+  participant "GiveConsentCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Reach the child SIN step
+page -> client : getConsents(caseId)
+client -> controller : GET /api/cases/{caseId}/consents
+controller -> query : Send GetConsentsQuery
+query -> db : Read ConsentRecord rows for the case
+db --> query : Records
+query --> controller : ConsentDto list
+controller --> client : 200 OK
+client --> page : Consents
+page --> actor : Show plain-language reason the SIN is required (L2-010 AC1)
+alt Sin consent recorded
+  page --> actor : Enable SIN input
+else Sin consent missing
+  page -> gate : Render single consent control
+  gate --> actor : SIN input disabled until consent (L2-010 AC1)
+  actor -> gate : Tick consent control
+  gate -> client : giveConsent([caseId], [Sin], "consent.v1")
+  client -> controller : POST /api/cases/{caseId}/consents
+  controller -> handler : Send GiveConsentCommand
+  handler -> db : Insert ConsentRecord and AuditEntry
+  db --> handler : Commit result
+  handler --> controller : ConsentDto list
+  controller --> client : 200 OK
+  client --> gate : Consent recorded
+  gate --> page : consentGiven output
+  page --> actor : Enable SIN input
+end
+@enduml

@@ -1,0 +1,59 @@
+@startuml
+title UML sequence behaviour — Start the wizard
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardWelcomePage" as page
+  participant "WizardStore" as store
+  participant "HttpWizardService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "StartWizardCommandHandler" as handler
+  participant "WizardProgress" as entity
+  participant "WizardStateBuilder" as builder
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Start
+page -> store : start()
+store -> client : start()
+client -> controller : POST /api/wizard
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send StartWizardCommand
+handler -> db : Load WizardProgress for current parent
+alt No progress yet
+  db --> handler : None
+  handler -> entity : Start(parent, "language", now)
+  entity --> handler : New progress
+  handler -> db : Insert in one unit of work
+  db --> handler : Committed
+else Progress already exists (retry or second device)
+  db --> handler : Existing progress
+  handler -> handler : Keep CurrentStepKey unchanged (idempotent)
+end
+handler -> builder : Build(progress, plan)
+builder --> handler : WizardStateDto
+handler --> controller : WizardStateDto
+controller --> client : 200 WizardStateDto
+client --> store : WizardState
+store --> page : currentStepKey
+page -> page : Navigate to the current step route
+page --> actor : First question, or the saved step
+@enduml

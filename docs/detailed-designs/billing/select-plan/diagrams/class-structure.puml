@@ -1,0 +1,112 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Select a plan
+
+enum PlanKind {
+  Free
+  LaunchFee
+  AnnualCare
+}
+
+enum PaymentStatus {
+  Pending
+  Paid
+  Failed
+}
+
+class PlanPrice {
+  +PlanKind Plan
+  +long AmountCents
+  +string Currency = "CAD"
+  +BillingPeriod Period
+}
+
+class PlanCatalog {
+  +Prices(): IReadOnlyList<PlanPrice>
+  +Tax(plan: PlanKind, province: string): long
+}
+
+class Provider {
+  +Guid Id
+  +string Name
+  +bool ChargesNoFees
+  +bool AcceptsZeroContributionClb
+  +bool FundsFreeTier
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid? ProviderId
+  +PlanKind? Plan
+  +DateTimeOffset? PaidAt
+}
+
+class Payment {
+  +Guid Id
+  +Guid CaseId
+  +Guid ParentAccountId
+  +PlanKind Plan
+  +long AmountCents
+  +long TaxCents
+  +string CheckoutSessionId
+  +string? ProviderEventId
+  +PaymentStatus Status
+  +string? FailureReason
+  +DateTimeOffset? PaidAt
+}
+
+class PlanOptionDto {
+  +PlanKind Plan
+  +long AmountCents
+  +string Period
+  +IReadOnlyList<string> FeatureKeys
+}
+
+class GetPlanOptionsQueryHandler {
+  +Handle(query: GetPlanOptionsQuery): Task<IReadOnlyList<PlanOptionDto>>
+}
+
+class ChooseFreePlanCommandHandler {
+  +Handle(command: ChooseFreePlanCommand): Task
+}
+
+class StartCheckoutCommandHandler {
+  +Handle(command: StartCheckoutCommand): Task<CheckoutSessionDto>
+}
+
+interface IPaymentGateway {
+  +CreateCheckoutSessionAsync(request: CheckoutRequest): Task<CheckoutSession>
+}
+
+class CheckoutSessionDto {
+  +Guid PaymentId
+  +Uri HostedCheckoutUrl
+}
+
+PlanCatalog "1" *-- "3" PlanPrice
+PlanPrice --> PlanKind
+RespCase --> Provider : selected
+RespCase "1" --> "*" Payment
+Payment --> PaymentStatus
+Payment --> PlanKind
+GetPlanOptionsQueryHandler --> PlanCatalog
+GetPlanOptionsQueryHandler --> Provider : reads FundsFreeTier
+GetPlanOptionsQueryHandler ..> PlanOptionDto : returns
+ChooseFreePlanCommandHandler --> RespCase : sets Plan = Free
+StartCheckoutCommandHandler --> PlanCatalog
+StartCheckoutCommandHandler ..> Payment : creates Pending
+StartCheckoutCommandHandler --> IPaymentGateway
+StartCheckoutCommandHandler ..> CheckoutSessionDto : returns
+@enduml

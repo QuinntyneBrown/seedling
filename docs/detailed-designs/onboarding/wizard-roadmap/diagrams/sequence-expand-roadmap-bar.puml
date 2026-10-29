@@ -1,0 +1,38 @@
+@startuml
+title UML sequence behaviour — Expand the roadmap bar
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardStore" as store
+  participant "WizardShell" as shell
+  participant "sl-roadmap-bar" as bar
+  participant "sl-roadmap" as list
+end box
+shell -> store : state()
+store --> shell : WizardState from the last /api/wizard response
+shell -> bar : stepLabel "Step 4 of 5 · Eligibility questions", timeLabel, percent, expanded = false
+bar --> actor : L2-038 collapsed bar below 992 px with step label and meter
+actor -> bar : Tap "All steps"
+bar -> shell : expandedChange(true)
+shell -> bar : expanded = true
+bar -> list : Project full list below the bar
+bar -> bar : aria-expanded="true"
+list --> actor : Every step with done, current and upcoming marks
+actor -> bar : Tap "All steps" again
+bar -> shell : expandedChange(false)
+shell -> bar : expanded = false
+bar --> actor : Collapsed bar, aria-expanded="false"
+@enduml

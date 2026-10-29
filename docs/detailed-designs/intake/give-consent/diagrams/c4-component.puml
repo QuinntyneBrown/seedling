@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Give consent
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(page, "IntakeConsentPage", "Angular page (app-intake-consent)", "Shows the explanation rows and one consent control")
+  Component(gate, "ConsentGate", "Angular component (app-consent-gate)", "Inline explanation and consent control on a gated step")
+  Component(client, "HttpConsentService", "Angular service behind CONSENT_SERVICE", "Calls the consent endpoints")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ConsentsController", "ASP.NET Core controller", "Exposes /api/cases/{caseId}/consents")
+  Component(give, "GiveConsentCommandHandler", "MediatR handler", "Records one ConsentRecord per category and case")
+  Component(policy, "ConsentPolicy", "Application service (IConsentPolicy)", "Rejects storage of a category without consent")
+  Component(audit, "IAuditTrail", "Application port", "Appends AuditEntry rows")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ConsentRecord, AuditEntry")
+}
+Rel(page, client, "giveConsent()")
+Rel(gate, client, "giveConsent()")
+Rel(client, ctrl, "POST / GET consents", "JSON/HTTPS")
+Rel(ctrl, give, "Sends GiveConsentCommand")
+Rel(give, db, "Inserts ConsentRecord rows", "EF Core")
+Rel(give, audit, "Appends ConsentGiven entries")
+Rel(policy, db, "Reads ConsentRecord rows", "EF Core")
+@enduml

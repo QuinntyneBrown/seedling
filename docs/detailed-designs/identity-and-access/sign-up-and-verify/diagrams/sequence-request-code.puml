@@ -1,0 +1,79 @@
+@startuml
+title UML sequence behaviour — Request a one-time code
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "SignUpPage" as page
+  participant "HttpAuthService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AuthController" as controller
+  participant "ExceptionHandlingMiddleware" as mw
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RequestVerificationCodeCommandValidator" as validator
+  participant "RequestVerificationCodeCommandHandler" as handler
+  participant "VerificationRateLimiter" as limiter
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "IVerificationCodeSender" as sender
+end box
+participant "Email service / SMS service" as ext
+
+actor -> page : Enter email address or mobile number, tap Send my code
+page -> page : Check format locally
+alt Invalid format (L2-007 #5)
+  page --> actor : Plain-language field error, no request sent
+else Valid format
+  page -> client : requestCode(channel, destination)
+  client -> controller : POST /api/auth/codes [AllowAnonymous]
+  controller -> validator : ValidationBehavior runs validator
+  alt Server finds invalid format (L2-007 #5)
+    validator --> mw : ValidationException
+    mw --> client : 400 ValidationProblemDetails (destination)
+    client --> page : Field error
+    page --> actor : Plain-language field error, no code sent
+  else Format valid
+    controller -> handler : Send RequestVerificationCodeCommand
+    handler -> handler : Normalize destination, hash destination and client IP
+    handler -> limiter : EnsureAllowedAsync(destinationHash, ipHash, now)
+    limiter -> db : Count challenges in trailing 60 minutes
+    db --> limiter : Counts
+    alt 3 for destination (L2-043 #1) or 20 for IP (L2-043 #3)
+      limiter --> mw : TooManyRequestsException
+      mw --> client : 429 ProblemDetails, Retry-After
+      client --> page : Rate limited
+      page --> actor : Plain-language wait message, no code sent
+    else Within limits
+      limiter --> handler : Allowed
+      handler -> db : Supersede open challenge, insert VerificationChallenge (CodeHash, ExpiresAt = now + 10 min)
+      db --> handler : Saved
+      note right of handler
+        Same path whether or not an account
+        exists; ParentAccount is not read (L2-043 #2)
+      end note
+      handler -> sender : SendAsync(channel, destination, 6-digit code) (L2-007 #1, #2)
+      sender -> ext : Deliver code
+      ext --> sender : Accepted
+      handler --> controller : CodeRequestedDto
+      controller --> client : 202 { challengeId, maskedDestination, expiresAt }
+      client --> page : Challenge
+      page --> actor : Navigate to VerifyCodePage
+    end
+  end
+end
+@enduml

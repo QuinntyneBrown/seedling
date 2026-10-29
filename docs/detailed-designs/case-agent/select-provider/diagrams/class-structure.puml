@@ -1,0 +1,116 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Select a provider
+
+class ProviderSelectionController {
+  +Select(caseId: Guid): Task<ActionResult<ProviderRecommendationDto>>
+  +Accept(caseId: Guid, body: AcceptProviderRequest): Task<IActionResult>
+}
+
+class SelectProviderCommand {
+  +Guid CaseId
+}
+
+class SelectProviderCommandHandler {
+  +Handle(command: SelectProviderCommand): Task<ProviderRecommendationDto>
+}
+
+class AcceptProviderCommand {
+  +Guid CaseId
+  +Guid ProviderId
+}
+
+class AcceptProviderCommandHandler {
+  +Handle(command: AcceptProviderCommand): Task
+}
+
+class ProviderRulesEngine {
+  +Match(providers: IEnumerable<Provider>, province: string): ProviderMatch?
+}
+
+class ProviderMatch {
+  +Provider Provider
+  +IReadOnlyList<string> Facts
+}
+
+class ProviderReasonPolicy {
+  +MaxSentences: int = 2
+  +Accept(candidate: string?, match: ProviderMatch): string
+}
+
+interface ICaseAgent {
+  +WriteProviderReasonAsync(match: ProviderMatch, province: string): Task<string>
+}
+
+class FoundryCaseAgent
+
+interface IAuditTrail {
+  +AppendAsync(entry: AuditEntry): Task
+}
+
+class Provider {
+  +Guid Id
+  +string Name
+  +bool ChargesNoFees
+  +bool AcceptsZeroContributionClb
+  +IReadOnlyList<string> Provinces
+  +Uri FeePageUrl
+  +int Rank
+  +bool IsActive
+}
+
+class ProviderRecommendation {
+  +Guid Id
+  +Guid CaseId
+  +Guid ProviderId
+  +string Reason
+  +DateTimeOffset RecommendedAt
+  +DateTimeOffset? AcceptedAt
+  +Accept(at: DateTimeOffset): void
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +string CurrentStepKey
+  +Guid? ProviderId
+  +AssignProvider(providerId: Guid): void
+}
+
+class ProviderRecommendationDto {
+  +Guid? ProviderId
+  +string? ProviderName
+  +string? Reason
+  +Uri? FeePageUrl
+  +IReadOnlyList<string> Facts
+  +string Status
+}
+
+ProviderSelectionController ..> SelectProviderCommand : sends
+ProviderSelectionController ..> AcceptProviderCommand : sends
+SelectProviderCommandHandler ..> SelectProviderCommand : handles
+AcceptProviderCommandHandler ..> AcceptProviderCommand : handles
+SelectProviderCommandHandler --> ProviderRulesEngine
+SelectProviderCommandHandler --> ProviderReasonPolicy
+SelectProviderCommandHandler --> ICaseAgent
+SelectProviderCommandHandler --> IAuditTrail
+AcceptProviderCommandHandler --> IAuditTrail
+SelectProviderCommandHandler ..> ProviderRecommendationDto : returns
+FoundryCaseAgent ..|> ICaseAgent
+ProviderRulesEngine ..> ProviderMatch : creates
+ProviderMatch --> Provider
+RespCase "1" --> "0..1" ProviderRecommendation : has
+ProviderRecommendation "*" --> "1" Provider : recommends
+@enduml

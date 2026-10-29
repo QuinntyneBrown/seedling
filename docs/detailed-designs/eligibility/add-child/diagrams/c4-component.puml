@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Add a child
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(page, "WizardChildrenPage", "Angular page", "Child list and add-child card")
+  Component(dash, "DashboardPage", "Angular page", "One card per case")
+  Component(svc, "HttpChildrenService", "CHILDREN_SERVICE", "add(), list()")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ChildrenController", "ASP.NET Core controller", "/api/children")
+  Component(val, "AddChildCommandValidator", "FluentValidation", "Names, relationship, date not in future")
+  Component(handler, "AddChildCommandHandler", "MediatR handler", "Age check, duplicate check, create")
+  Component(policy, "ChildAgePolicy", "Domain service", "Grant age below 18")
+  Component(entities, "Child and RespCase", "Domain entities", "Profile and its single case")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Child, RespCase")
+}
+
+Rel(page, svc, "Adds child")
+Rel(dash, svc, "Navigates to add child")
+Rel(svc, ctrl, "POST /api/children", "JSON/HTTPS")
+Rel(ctrl, handler, "Sends AddChildCommand")
+Rel(handler, val, "Validated by", "ValidationBehavior")
+Rel(handler, policy, "Checks age")
+Rel(handler, entities, "Creates")
+Rel(handler, db, "Saves in one unit of work", "EF Core")
+@enduml

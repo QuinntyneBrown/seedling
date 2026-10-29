@@ -1,0 +1,58 @@
+@startuml
+title UML sequence behaviour — Resume the wizard on another device
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA (second device)" #E0F2FE
+  participant "SignInPage" as signin
+  participant "wizardEntryGuard" as guard
+  participant "WizardStore" as store
+  participant "WizardShell" as shell
+  participant "Wizard step page" as page
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ResumeWizardCommandHandler" as handler
+  participant "WizardProgress" as entity
+  participant "WizardStateBuilder" as builder
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> signin : Sign in the next day on another device
+signin -> guard : Navigate to the root route
+guard -> store : resume()
+store -> controller : POST /api/wizard/resume
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send ResumeWizardCommand
+handler -> db : Load WizardProgress for current parent
+db --> handler : CurrentStepKey = step 6, ElapsedSeconds, LastActiveAt yesterday
+handler -> entity : RecordReturn(now)
+entity -> entity : LastActiveAt = now; absence not added; ReminderSentAt cleared
+handler -> db : Save (RowVersion checked)
+db --> handler : Committed
+handler -> builder : Build(progress, plan)
+builder --> handler : WizardStateDto with roadmap and time remaining
+handler --> controller : WizardStateDto
+controller --> store : 200 WizardStateDto
+store -> store : Write state to the device store
+store --> guard : currentStepKey = step 6
+guard -> page : L2-040 open step 6 route
+page -> controller : GET /api/wizard/steps/{step 6 key}
+controller --> page : 200 saved answer, if any
+shell --> actor : Step 6 with earlier answers intact and "about N min left"
+@enduml

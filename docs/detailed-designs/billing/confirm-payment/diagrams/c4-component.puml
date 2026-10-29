@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Confirm a payment
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(ret, "CheckoutReturnPage", "Angular page (app-checkout-return)", "Waits for the payment result and routes on")
+  Component(client, "HttpBillingService", "Angular service behind BILLING_SERVICE", "Reads payment status")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(hook, "PaymentWebhooksController", "ASP.NET Core controller, AllowAnonymous", "Reads the raw body and signature header")
+  Component(billing, "BillingController", "ASP.NET Core controller", "GET payment status")
+  Component(gateway, "IPaymentGateway", "Application port", "VerifyWebhook: signature check and event parsing")
+  Component(record, "RecordPaymentEventCommandHandler", "MediatR handler", "Applies a verified event once")
+  Component(status, "GetPaymentStatusQueryHandler", "MediatR handler", "Pending, Paid or Failed with reason")
+  Component(audit, "IAuditTrail", "Application port", "Appends AuditEntry rows")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Payment, PaymentWebhookEvent, RespCase")
+}
+System_Ext(payments, "Payment provider", "Signed webhooks")
+Rel(payments, hook, "Webhook", "HTTPS")
+Rel(hook, gateway, "VerifyWebhook(rawBody, headers)")
+Rel(hook, record, "Sends RecordPaymentEventCommand")
+Rel(record, db, "Inbox insert, Payment and RespCase update", "EF Core")
+Rel(record, audit, "Appends PaymentConfirmed")
+Rel(ret, client, "getPaymentStatus()")
+Rel(client, billing, "JSON/HTTPS")
+Rel(billing, status, "Sends GetPaymentStatusQuery")
+Rel(status, db, "Reads Payment", "EF Core")
+@enduml

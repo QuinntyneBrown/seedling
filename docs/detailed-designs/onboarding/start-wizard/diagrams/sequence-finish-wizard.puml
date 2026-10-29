@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Finish the wizard
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "WizardNextPage" as page
+  participant "WizardStore" as store
+  participant "HttpWizardService" as client
+  participant "WizardDonePage" as done
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "FinishWizardCommandHandler" as handler
+  participant "WizardProgress" as entity
+  participant "RespCase" as rcase
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Finish
+page -> store : finish()
+store -> client : finish()
+client -> controller : POST /api/wizard/finish
+controller -> controller : Authenticate (fallback policy)
+controller -> handler : Send FinishWizardCommand
+handler -> db : Load WizardProgress and RespCase rows for current parent
+db --> handler : Progress, cases
+alt Setup steps 1 to 7 not all complete
+  handler --> controller : ConflictException wizard_setup_incomplete
+  controller --> client : 409 ProblemDetails
+  client --> page : Show the first incomplete step
+else Setup complete
+  handler -> entity : Finish(now)
+  loop Each case in CheckingEligibility
+    handler -> rcase : L2-041 MoveTo(CollectingDocuments)
+  end
+  handler -> db : Save in one unit of work
+  db --> handler : Committed
+  handler --> controller : WizardStateDto with finishedAt
+  controller --> client : 200 WizardStateDto
+  client --> store : WizardState
+  store -> done : Open "You're all set"
+  done --> actor : Saved place and amount waiting
+  actor -> done : Go to my dashboard
+  done --> actor : L2-041 dashboard with Collecting documents or Ready to approve
+end
+@enduml

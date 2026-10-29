@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Select a plan
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(plan, "PlanPage", "Angular page (app-plan)", "Plan cards, Free first when offered")
+  Component(checkout, "CheckoutPage", "Angular page (app-checkout)", "Order summary and Pay")
+  Component(option, "PlanOption", "sl-plan-option design-system component", "Radio card with title, price and features")
+  Component(client, "HttpBillingService", "Angular service behind BILLING_SERVICE", "Calls /api/cases/{caseId}/plans and checkout")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "BillingController", "ASP.NET Core controller", "Plan and checkout endpoints")
+  Component(getPlans, "GetPlanOptionsQueryHandler", "MediatR handler", "Builds the ordered plan list")
+  Component(choose, "ChooseFreePlanCommandHandler", "MediatR handler", "Records the Free plan")
+  Component(start, "StartCheckoutCommandHandler", "MediatR handler", "Creates a pending Payment and a checkout session")
+  Component(catalog, "PlanCatalog", "Domain service", "Prices and tax per plan and province")
+  Component(gateway, "IPaymentGateway", "Application port", "Implemented in Infrastructure/Payments")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Provider, RespCase, Payment")
+}
+System_Ext(payments, "Payment provider", "Hosted checkout")
+Rel(plan, option, "Renders")
+Rel(plan, client, "getPlans(), choosePlan()")
+Rel(checkout, client, "startCheckout()")
+Rel(client, ctrl, "JSON/HTTPS")
+Rel(ctrl, getPlans, "Sends GetPlanOptionsQuery")
+Rel(ctrl, choose, "Sends ChooseFreePlanCommand")
+Rel(ctrl, start, "Sends StartCheckoutCommand")
+Rel(getPlans, catalog, "Prices")
+Rel(start, catalog, "Amount and tax")
+Rel(getPlans, db, "Reads Provider.FundsFreeTier", "EF Core")
+Rel(start, db, "Inserts Payment(Pending)", "EF Core")
+Rel(start, gateway, "CreateCheckoutSessionAsync")
+Rel(gateway, payments, "Creates session", "HTTPS")
+@enduml

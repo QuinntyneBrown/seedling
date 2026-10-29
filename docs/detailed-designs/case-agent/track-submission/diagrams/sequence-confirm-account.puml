@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Provider confirms the account
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "TrackSubmissionsJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "CheckPendingSubmissionsCommandHandler" as check
+  participant "ConfirmAccountOpenedCommandHandler" as confirm
+  participant "RespCase" as entity
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IProviderGateway" as gateway
+  participant "INotificationDispatcher" as notify
+  database "Seedlings database" as db
+end box
+participant "RESP provider" as provider
+job -> check : Send CheckPendingSubmissionsCommand (daily)
+check -> db : Load Provider submissions with no ConfirmedAt
+db --> check : Open submissions
+loop each open submission
+  check -> gateway : GetApplicationStatusAsync(externalReference)
+  gateway -> provider : Status request (protocol <TO SUPPLY>)
+  provider --> gateway : Confirmed with account number
+  gateway --> check : ProviderApplicationStatus Confirmed
+  check -> db : AuditEntry ProviderStatusChecked
+  check -> confirm : Send ConfirmAccountOpenedCommand
+  confirm -> db : Load submission and case
+  db --> confirm : State
+  alt already confirmed
+    confirm --> check : No change
+  else first confirmation
+    confirm -> entity : MarkAccountOpen(accountNumber) per L2-019
+    entity --> confirm : Status AccountOpen
+    confirm -> db : Save AccountNumber, Submission.ConfirmedAt, AuditEntry AccountOpened
+    db --> confirm : Commit
+    confirm -> notify : RESP is open (deep link to case)
+    notify --> confirm : Sent on parent's channel
+    confirm -> confirm : Publish AccountOpened (document retention, deposits)
+    confirm --> check : Done
+  end
+end
+check --> job : CheckSummary
+@enduml

@@ -1,0 +1,99 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Give consent
+
+enum ConsentCategory {
+  IdentityDocuments
+  Sin
+  Financial
+}
+
+class ConsentRecord {
+  +Guid Id
+  +Guid CaseId
+  +ConsentCategory Category
+  +DateTimeOffset GivenAt
+  +string ExplanationVersion
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid ChildId
+  +CaseStatus Status
+}
+
+class GiveConsentCommand {
+  +IReadOnlyList<Guid> CaseIds
+  +IReadOnlyList<ConsentCategory> Categories
+  +string ExplanationVersion
+}
+
+class GiveConsentCommandHandler {
+  +Handle(command: GiveConsentCommand): Task<IReadOnlyList<ConsentDto>>
+}
+
+class GetConsentsQuery {
+  +Guid CaseId
+}
+
+class ConsentDto {
+  +Guid CaseId
+  +ConsentCategory Category
+  +DateTimeOffset GivenAt
+}
+
+interface IConsentPolicy {
+  +EnsureGivenAsync(caseId: Guid, category: ConsentCategory): Task
+}
+
+class ConsentPolicy {
+  +EnsureGivenAsync(caseId: Guid, category: ConsentCategory): Task
+}
+
+class ConsentNotGivenException {
+  +string Code = "consent_required"
+}
+
+interface IAuditTrail {
+  +AppendAsync(entry: AuditEntry): Task
+}
+
+class AuditEntry {
+  +Guid Id
+  +Guid CaseId
+  +AuditActor Actor
+  +string Action
+  +string DataSent
+  +string Recipient
+  +DateTimeOffset At
+}
+
+interface IAppDbContext {
+  +DbSet<ConsentRecord> ConsentRecords
+  +SaveChangesAsync(): Task<int>
+}
+
+RespCase "1" *-- "0..3" ConsentRecord : holds
+ConsentRecord --> ConsentCategory : has
+GiveConsentCommandHandler ..> GiveConsentCommand : handles
+GiveConsentCommandHandler ..> ConsentDto : returns
+GiveConsentCommandHandler --> IAppDbContext : writes
+GiveConsentCommandHandler --> IAuditTrail : appends
+IAuditTrail ..> AuditEntry : writes
+ConsentPolicy ..|> IConsentPolicy
+ConsentPolicy --> IAppDbContext : reads
+ConsentPolicy ..> ConsentNotGivenException : throws
+GetConsentsQuery ..> ConsentDto : yields
+@enduml

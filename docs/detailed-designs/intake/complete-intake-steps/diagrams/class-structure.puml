@@ -1,0 +1,122 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Complete intake steps
+
+enum IntakeStepKey {
+  Consent
+  ParentIdentity
+  ParentAddress
+  ChildIdentity
+  ChildSin
+  ParentSin
+  ExistingResp
+  Contact
+  DocumentCapture
+  DocumentReview
+}
+
+enum SinSubject {
+  Parent
+  Child
+}
+
+class IntakeField {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid? CaseId
+  +IntakeStepKey StepKey
+  +string FieldKey
+  +string Value
+  +DateTimeOffset SavedAt
+}
+
+class WizardProgress {
+  +Guid ParentAccountId
+  +string CurrentStepKey
+  +IReadOnlyList<string> CompletedSteps
+  +DateTimeOffset StartedAt
+  +int ElapsedSeconds
+  +DateTimeOffset LastActiveAt
+}
+
+class IntakeStepDefinition {
+  +IntakeStepKey Key
+  +bool PerChild
+  +IReadOnlyList<RequiredField> RequiredFields
+}
+
+class RequiredField {
+  +string FieldKey
+  +string MissingMessageKey
+}
+
+class IntakeStepPlanner {
+  +Plan(answers: EligibilityAnswers): IReadOnlyList<IntakeStepDefinition>
+  +Next(current: IntakeStepKey, plan): IntakeStepKey?
+}
+
+class SaveIntakeFieldCommand {
+  +IntakeStepKey StepKey
+  +string FieldKey
+  +Guid? CaseId
+  +string Value
+}
+
+class AdvanceIntakeStepCommand {
+  +IntakeStepKey StepKey
+  +Guid? CaseId
+}
+
+class SaveSinCommand {
+  +Guid CaseId
+  +SinSubject Subject
+  +string Sin
+}
+
+class IntakeDto {
+  +IReadOnlyList<IntakeStepDto> Steps
+  +IntakeStepKey CurrentStep
+  +int CurrentNumber
+  +int TotalSteps
+  +IReadOnlyList<IntakeFieldDto> Fields
+  +IReadOnlyList<SinSummaryDto> Sins
+}
+
+class SaveIntakeFieldCommandHandler
+class AdvanceIntakeStepCommandHandler
+class SaveSinCommandHandler
+class GetIntakeQueryHandler
+
+interface IConsentPolicy
+interface ISensitiveDataVault {
+  +StoreSinAsync(caseId: Guid, subject: SinSubject, sin: string): Task<string>
+}
+interface IAppDbContext
+
+IntakeField --> IntakeStepKey : has
+IntakeStepDefinition "1" *-- "*" RequiredField
+IntakeStepPlanner ..> IntakeStepDefinition : orders
+SaveIntakeFieldCommandHandler ..> SaveIntakeFieldCommand : handles
+SaveIntakeFieldCommandHandler --> IAppDbContext : upserts IntakeField
+SaveIntakeFieldCommandHandler --> IConsentPolicy : Financial for ExistingResp
+AdvanceIntakeStepCommandHandler ..> AdvanceIntakeStepCommand : handles
+AdvanceIntakeStepCommandHandler --> IntakeStepPlanner : uses
+AdvanceIntakeStepCommandHandler --> WizardProgress : updates
+SaveSinCommandHandler ..> SaveSinCommand : handles
+SaveSinCommandHandler --> IConsentPolicy : Sin
+SaveSinCommandHandler --> ISensitiveDataVault : stores
+SaveSinCommand --> SinSubject
+GetIntakeQueryHandler ..> IntakeDto : returns
+GetIntakeQueryHandler --> IntakeStepPlanner : uses
+@enduml

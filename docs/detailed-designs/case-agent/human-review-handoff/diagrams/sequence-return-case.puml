@@ -1,0 +1,71 @@
+@startuml
+title UML sequence behaviour — Return a case from review
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Human reviewer" as actor
+box "Frontend — Admin app" #E0F2FE
+  participant "ReviewCasePage" as page
+  participant "ReturnCaseDialog" as dialog
+  participant "HttpReviewQueueService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ReviewQueueController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetReviewCaseQueryHandler" as getCase
+  participant "ReturnCaseFromReviewCommandHandler" as ret
+  participant "CaseAgentResumer" as resumer
+  participant "Step command handler" as step
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ISensitiveDataVault" as vault
+  database "Seedlings database" as db
+end box
+actor -> page : Open a queued case
+page -> client : get(itemId)
+client -> controller : GET /api/review-queue/{itemId}
+controller -> controller : Authorize Reviewer policy
+controller -> getCase : Send GetReviewCaseQuery
+getCase -> db : Load open ReviewItem and case
+db --> getCase : Item and case
+getCase -> vault : Read rejected document, actor reviewer, purpose Review:ProviderRejected
+vault --> getCase : Document; access log entry written (L2-045)
+getCase --> controller : ReviewCaseDto
+controller --> client : 200
+client --> page : Case detail
+actor -> page : Tap Return case
+page -> dialog : Open CDK dialog
+actor -> dialog : Choose outcome, write resolution note
+dialog -> client : returnCase(itemId, request)
+client -> controller : POST /api/review-queue/{itemId}/return
+controller -> ret : Send ReturnCaseFromReviewCommand
+ret -> db : Load item; reject if already resolved (409)
+db --> ret : Open item
+ret -> db : Resolve item (ResolvedAt, ResolvedBy), AuditEntry CaseReturned
+alt ResumeAgent
+  ret -> resumer : ResumeAsync(case, failedStepKey)
+  resumer -> db : ReleaseFromReview(step)
+  resumer -> step : Send command for the failed step (L2-022)
+  step --> resumer : Step result (submission still passes the approval gate)
+  resumer --> ret : Resumed
+else AskParent
+  ret -> db : Save AttentionItem(itemKey, message); case stays NeedsAttention
+end
+ret --> controller : Done
+controller --> client : 200
+client --> dialog : Close
+dialog --> page : Back to the queue
+page --> actor : Item resolved
+@enduml

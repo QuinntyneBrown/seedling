@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Sign out of all devices
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA (this device)" #E0F2FE
+  participant "SettingsPage" as page
+  participant "SignOutAllDevicesDialog" as dialog
+  participant "BrowserSessionStore" as store
+end box
+box "Frontend — Seedlings PWA (other device)" #E0F2FE
+  participant "authInterceptor" as other
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AuthController" as controller
+  participant "SessionVersionValidator" as validator
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SignOutAllDevicesCommandHandler" as handler
+  participant "ISessionIssuer" as issuer
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+actor -> page : Tap Sign out of all devices
+page -> dialog : Open CDK dialog
+actor -> dialog : Confirm
+dialog -> controller : POST /api/auth/sign-out-all (bearer)
+controller -> validator : Validate token and sv claim
+validator -> db : Read ParentAccount.SessionVersion
+db --> validator : Matches
+controller -> handler : Send SignOutAllDevicesCommand
+handler -> db : Load ParentAccount and its refresh tokens
+handler -> handler : SessionVersion + 1, revoke every RefreshToken (L2-044 #3)
+handler -> issuer : IssueAsync(account) for this device, new family
+issuer --> handler : SessionTokens with new sv
+handler -> db : Save in one unit of work
+db --> handler : Committed
+handler --> controller : SessionTokens
+controller --> dialog : 200 SessionTokens
+dialog -> store : Replace pair
+dialog --> actor : Other devices signed out
+
+== Next request from the other device ==
+other -> controller : GET /api/cases (unexpired access token, old sv)
+controller -> validator : Validate token and sv claim
+validator -> db : Read ParentAccount.SessionVersion
+db --> validator : Newer than claim
+validator --> other : 401 (L2-044 #3)
+other -> controller : POST /api/auth/refresh with revoked token
+controller --> other : 401 refresh_token_invalid
+other --> other : Clear session, show sign-in page
+@enduml

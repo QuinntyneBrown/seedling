@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Check eligibility
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Answers up to 6 questions, sees CLB and CESG amounts", "HTTPS")
+Rel(seedlings, esdc, "Grant rates table sourced from published ESDC tables; no runtime call")
+@enduml

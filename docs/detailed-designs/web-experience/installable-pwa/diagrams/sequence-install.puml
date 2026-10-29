@@ -1,0 +1,53 @@
+@startuml
+title UML sequence behaviour — Install the app
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser (Chrome / Edge)" as browser
+  participant "PwaInstall" as install
+  participant "LandingPage" as page
+  participant "sl-install-prompt" as prompt
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "Azure Static Web App" as swa
+end box
+actor -> browser : Open Seedlings
+browser -> swa : GET / and manifest.webmanifest
+swa --> browser : index.html, manifest (Cache-Control: no-cache)
+browser -> browser : Check L2-001 manifest fields, icons 192/512, maskable, registered service worker
+browser -> install : beforeinstallprompt
+install -> install : preventDefault(); keep deferred event; canInstall = true
+page -> install : canInstall() and not isStandalone()
+install --> page : true
+page -> prompt : Render "Add Seedlings to your home screen"
+alt Parent chooses Install
+  actor -> prompt : Install
+  prompt -> page : install
+  page -> install : install()
+  install -> browser : deferred.prompt()
+  browser --> actor : Native install dialog (L2-001 criteria 1 and 3)
+  actor -> browser : Confirm
+  browser --> install : userChoice = accepted
+  install --> page : InstallOutcome.Accepted; hide offer
+  browser --> actor : Icon on home screen; launches in standalone display
+else Parent chooses Not now
+  actor -> prompt : Not now
+  prompt -> page : dismiss
+  page -> install : dismiss()
+  install -> install : localStorage sl.install.dismissedAt = now
+  install --> page : Hide offer for <TO SUPPLY> period
+end
+@enduml

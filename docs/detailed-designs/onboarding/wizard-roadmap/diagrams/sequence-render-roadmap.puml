@@ -1,0 +1,62 @@
+@startuml
+title UML sequence behaviour — Render the roadmap at a step
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Wizard step page" as page
+  participant "WizardStore" as store
+  participant "WizardShell" as shell
+  participant "sl-roadmap / sl-roadmap-bar" as roadmap
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "WizardController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "AnswerWizardStepCommandHandler" as handler
+  participant "WizardProgress" as entity
+  participant "WizardStateBuilder" as builder
+  participant "RoadmapBuilder" as rb
+  participant "WizardTimeEstimator" as est
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Answer step 3 and tap Continue
+page -> store : answer(stepKey, answer)
+store -> controller : PUT /api/wizard/steps/{stepKey}
+controller -> handler : Send AnswerWizardStepCommand
+handler -> entity : CompleteStep(...) calls RecordActivity(now, idle cap)
+entity -> entity : ElapsedSeconds += min(now - LastActiveAt, idle cap)
+handler -> db : Save in one unit of work
+handler -> builder : Build(progress, plan)
+builder -> rb : Build(plan, progress)
+rb --> builder : L2-038 groups: steps 1-3 Done, step 4 Current, rest Upcoming
+builder -> est : Estimate(plan, progress)
+est -> est : L2-039 remaining = sum of standard estimates of steps not complete
+est -> est : Round minutes to nearest, midpoint to even; spent = floor(ElapsedSeconds / 60)
+est --> builder : RoadmapTimeDto (3 spent, 17 remaining, percent)
+builder --> handler : WizardStateDto
+handler --> controller : WizardStateDto
+controller --> store : 200 WizardStateDto
+store -> shell : state() changed
+shell -> shell : formatRoadmapTime: "3 minutes in, about 17 minutes left"
+alt Viewport 992 px or wider
+  shell -> roadmap : Render sl-roadmap in aside "Your roadmap"
+else Viewport below 992 px
+  shell -> roadmap : Render sl-roadmap-bar, collapsed
+end
+roadmap --> actor : Step 4 with aria-current="step", time spent and left
+@enduml

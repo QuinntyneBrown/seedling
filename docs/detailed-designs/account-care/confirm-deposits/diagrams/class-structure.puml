@@ -1,0 +1,117 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Confirm deposits
+
+enum DepositKind {
+  Clb
+  Cesg
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +string? AccountNumber
+}
+
+class ExpectedDeposit {
+  +Guid Id
+  +Guid CaseId
+  +DepositKind Kind
+  +DateTimeOffset ClaimedAt
+  +decimal? Amount
+  +DateOnly? ReceivedAt
+  +string? ProviderReference
+  +DateTimeOffset? OverdueFlaggedAt
+  +ConfirmReceived(amount: decimal, receivedOn: DateOnly, reference: string): bool
+  +MarkOverdue(now: DateTimeOffset): void
+}
+
+class DepositOverduePolicy {
+  +int OverdueAfterDays = 90
+  +IsOverdue(deposit: ExpectedDeposit, now: DateTimeOffset): bool
+}
+
+class ReviewItem {
+  +Guid Id
+  +Guid CaseId
+  +string Reason
+  +string FailedStepKey
+  +DateTimeOffset QueuedAt
+}
+
+class ProviderDepositReport {
+  +string AccountNumber
+  +DepositKind Kind
+  +decimal Amount
+  +DateOnly DepositedOn
+  +string ProviderReference
+}
+
+interface IProviderAccountFeed {
+  +GetDepositReportsAsync(since: DateTimeOffset): Task<IReadOnlyList<ProviderDepositReport>>
+}
+
+class RecordExpectedDepositCommand {
+  +Guid CaseId
+  +DepositKind Kind
+  +DateTimeOffset ClaimedAt
+}
+class ConfirmDepositCommand {
+  +ProviderDepositReport Report
+}
+class FlagOverdueDepositsCommand
+class GetCaseDepositsQuery {
+  +Guid CaseId
+}
+class DepositDto {
+  +DepositKind Kind
+  +decimal? Amount
+  +DateOnly? ReceivedAt
+  +DateTimeOffset ClaimedAt
+  +bool Overdue
+}
+
+class ConfirmDepositCommandHandler
+class FlagOverdueDepositsCommandHandler
+class GetCaseDepositsQueryHandler
+class DepositCheckJob {
+  +ExecuteAsync(ct: CancellationToken): Task
+}
+interface INotificationDispatcher {
+  +DispatchAsync(request: NotificationRequest): Task
+}
+interface IAuditTrail {
+  +AppendAsync(entry: AuditEntry): Task
+}
+
+RespCase "1" *-- "0..*" ExpectedDeposit : expects
+ExpectedDeposit --> DepositKind
+ProviderDepositReport --> DepositKind
+DepositCheckJob ..> IProviderAccountFeed : reads reports
+DepositCheckJob ..> ConfirmDepositCommand : sends
+DepositCheckJob ..> FlagOverdueDepositsCommand : sends
+ConfirmDepositCommandHandler ..> ConfirmDepositCommand : handles
+ConfirmDepositCommandHandler --> ExpectedDeposit : confirms
+ConfirmDepositCommandHandler ..> IAuditTrail
+FlagOverdueDepositsCommandHandler ..> FlagOverdueDepositsCommand : handles
+FlagOverdueDepositsCommandHandler ..> DepositOverduePolicy
+FlagOverdueDepositsCommandHandler --> ExpectedDeposit : marks overdue
+FlagOverdueDepositsCommandHandler ..> ReviewItem : queues
+FlagOverdueDepositsCommandHandler ..> INotificationDispatcher
+FlagOverdueDepositsCommandHandler ..> IAuditTrail
+GetCaseDepositsQueryHandler ..> GetCaseDepositsQuery : handles
+GetCaseDepositsQueryHandler ..> DepositDto : returns
+RecordExpectedDepositCommand --> DepositKind
+@enduml

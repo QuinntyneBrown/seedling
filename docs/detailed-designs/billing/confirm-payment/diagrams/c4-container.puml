@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Confirm a payment
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(payments, "Payment provider", "Signed webhooks; provider <TO SUPPLY>")
+Rel(payments, api, "POST /api/webhooks/payments (anonymous, signed)", "HTTPS")
+Rel(parent, pwa, "Returns from checkout", "HTTPS")
+Rel(pwa, api, "GET payment status", "JSON/HTTPS")
+Rel(api, db, "Payment, PaymentWebhookEvent, RespCase, AuditEntry", "EF Core")
+@enduml

@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Accessible screens
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+}
+Rel(parent, pwa, "Uses with keyboard, screen reader, touch or 200% text", "HTTPS")
+Rel(pwa, api, "Submits answers; receives field-keyed ProblemDetails errors", "JSON/HTTPS")
+@enduml

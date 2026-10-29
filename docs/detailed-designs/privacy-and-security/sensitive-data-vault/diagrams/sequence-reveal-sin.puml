@@ -1,0 +1,66 @@
+@startuml
+title UML sequence behaviour — Reveal a SIN after re-authentication
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "reauthenticationInterceptor" as icpt
+  participant "ReauthenticateDialog" as dialog
+  participant "HttpVaultService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "VaultController" as ctrl
+  participant "RecentAuthenticationHandler" as policy
+  participant "ReauthenticationController" as actrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RevealSinQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  database "Sensitive data vault" as vdb
+end box
+actor -> page : Tap Show on the saved SIN
+page -> client : revealSin(caseId, subject)
+client -> ctrl : POST /api/cases/{caseId}/sins/{subject}/reveal
+ctrl -> policy : Evaluate RecentAuthentication
+alt auth_time older than 5 minutes (L2-032 AC1)
+  policy --> ctrl : Fail
+  ctrl --> icpt : 403 ProblemDetails code reauthentication_required
+  icpt -> dialog : Open C-02 Confirm it's you
+  dialog -> actrl : POST /api/auth/reauthenticate/challenge
+  actrl --> dialog : Code sent to contact channel
+  actor -> dialog : Enter code
+  dialog -> actrl : POST /api/auth/reauthenticate {challengeId, code}
+  actrl --> dialog : New access token, auth_time = now
+  dialog --> icpt : Confirmed
+  icpt -> ctrl : Retry POST .../reveal
+  ctrl -> policy : Evaluate RecentAuthentication
+end
+policy --> ctrl : Succeed
+ctrl -> handler : Send RevealSinQuery
+handler -> handler : Resolve case owner from ICurrentUser (404 if not owner)
+handler -> vault : RevealSinAsync(caseId, subject, VaultAccess(Parent, ShowToParent))
+vault -> vdb : Load SinRecord
+vault -> vault : Unprotect ciphertext
+vault -> vdb : INSERT VaultAccessLogEntry(user, purpose, timestamp) (L2-032 AC2)
+vdb --> vault : Committed
+vault --> handler : Plain SIN
+handler --> ctrl : RevealedSinDto
+ctrl --> client : 200, Cache-Control: no-store
+client --> page : SIN
+page --> actor : Show full SIN until the view closes
+@enduml

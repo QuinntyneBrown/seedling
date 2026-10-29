@@ -1,0 +1,103 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Pre-fill the forms
+
+enum FormKind {
+  ProviderApplication
+  Sde0093
+}
+
+enum FieldSource {
+  Intake
+  Vault
+  Parent
+}
+
+class RespCase {
+  +Guid Id
+  +Guid ParentAccountId
+  +CaseStatus Status
+  +Guid? ProviderId
+  +MarkReadyToApprove(at: DateTimeOffset): void
+}
+
+class PrefilledForm {
+  +Guid Id
+  +Guid CaseId
+  +FormKind FormKind
+  +DateTimeOffset PrefilledAt
+  +IReadOnlyList<PrefilledFormField> Fields
+  +UnfilledFields: IReadOnlyList<string>
+  +SetParentValue(fieldKey: string, value: string, at: DateTimeOffset): void
+}
+
+class PrefilledFormField {
+  +string FieldKey
+  +string? Value
+  +Guid? VaultItemId
+  +FieldSource Source
+  +DateTimeOffset? EditedAt
+}
+
+class FormFieldDefinition {
+  +string FieldKey
+  +string Label
+  +string DataType
+  +bool IsSensitive
+  +string? IntakeSource
+  +string ValidationRule
+}
+
+class FormFieldCatalog {
+  +For(kind: FormKind, providerId: Guid): IReadOnlyList<FormFieldDefinition>
+}
+
+class FormPrefillService {
+  +Fill(form: PrefilledForm, definitions: IReadOnlyList<FormFieldDefinition>, intake: IntakeSnapshot): void
+}
+
+class PrefillFormsCommandHandler {
+  +Handle(command: PrefillFormsCommand): Task<PrefilledFormsDto>
+}
+
+class EditPrefilledFieldCommand {
+  +Guid CaseId
+  +FormKind FormKind
+  +string FieldKey
+  +string Value
+}
+
+class EditPrefilledFieldCommandHandler {
+  +Handle(command: EditPrefilledFieldCommand): Task<PrefilledFieldDto>
+}
+
+interface ISensitiveDataVault {
+  +ReadMaskedAsync(itemId: Guid, purpose: string): Task<string>
+  +StoreSinAsync(caseId: Guid, sin: string): Task<Guid>
+}
+
+RespCase "1" *-- "0..2" PrefilledForm : owns
+PrefilledForm "1" *-- "*" PrefilledFormField : owns
+PrefilledForm --> FormKind
+PrefilledFormField --> FieldSource
+FormFieldCatalog "1" --> "*" FormFieldDefinition : defines
+PrefillFormsCommandHandler --> FormFieldCatalog
+PrefillFormsCommandHandler --> FormPrefillService
+PrefillFormsCommandHandler --> ISensitiveDataVault
+PrefillFormsCommandHandler ..> RespCase : loads / updates
+EditPrefilledFieldCommandHandler ..> EditPrefilledFieldCommand : handles
+EditPrefilledFieldCommandHandler --> ISensitiveDataVault
+EditPrefilledFieldCommandHandler ..> PrefilledForm : mutates
+FormPrefillService ..> PrefilledForm : fills
+@enduml

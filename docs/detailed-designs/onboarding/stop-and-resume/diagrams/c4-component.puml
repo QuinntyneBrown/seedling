@@ -1,0 +1,37 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Stop and resume the wizard
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(guard, "wizardEntryGuard", "Angular CanActivateFn", "Resumes an open journey on app open and sign-in")
+  Component(store, "WizardStore", "Angular signal store", "resume(), caches state in the device store")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "WizardController", "ASP.NET Core controller", "POST /api/wizard/resume")
+  Component(resume, "ResumeWizardCommandHandler", "MediatR handler", "RecordReturn, returns state")
+}
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "WizardReminderJob", "Hosted service, wizard-reminders WebJob", "Sends SendWizardRemindersCommand per run")
+}
+Container_Boundary(app, "Application layer, run by the API and the Worker") {
+  Component(remind, "SendWizardRemindersCommandHandler", "MediatR handler", "Due rows, claim, estimate, dispatch")
+  Component(progress, "WizardProgress", "Domain entity", "RecordReturn, MarkReminderSent")
+  Component(estimator, "WizardTimeEstimator", "Domain service", "Remaining minutes")
+  Component(dispatcher, "INotificationDispatcher", "Application port", "Push, SMS or email by channel")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "WizardProgress, ParentAccount, Notification")
+System_Ext(channels, "Push, SMS and email services", "Deliver the reminder")
+
+Rel(guard, store, "resume()")
+Rel(store, ctrl, "Calls", "JSON/HTTPS")
+Rel(ctrl, resume, "Sends ResumeWizardCommand")
+Rel(resume, progress, "RecordReturn(now)")
+Rel(job, remind, "Sends SendWizardRemindersCommand")
+Rel(remind, progress, "MarkReminderSent(now)")
+Rel(remind, estimator, "Estimate(plan, progress)")
+Rel(remind, dispatcher, "SendAsync(WizardReminder)")
+Rel(dispatcher, channels, "Delivers", "HTTPS / Web Push")
+Rel(resume, db, "Saves", "EF Core")
+Rel(remind, db, "Queries and claims", "EF Core")
+@enduml

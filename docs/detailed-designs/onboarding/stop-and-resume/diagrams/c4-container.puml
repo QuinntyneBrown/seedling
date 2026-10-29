@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Stop and resume the wizard
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+
+Rel(parent, pwa, "Taps Finish later, reopens on any device", "HTTPS")
+Rel(pwa, idb, "Keeps last WizardState", "IndexedDB API")
+Rel(pwa, api, "POST /api/wizard/resume, GET /api/wizard/steps/{stepKey}", "JSON/HTTPS")
+Rel(api, db, "Reads and writes WizardProgress", "EF Core")
+Rel(worker, db, "Finds idle journeys, claims rows", "EF Core")
+Rel(worker, push, "Reminder", "Web Push")
+Rel(worker, sms, "Reminder", "HTTPS")
+Rel(worker, email, "Reminder", "HTTPS")
+@enduml

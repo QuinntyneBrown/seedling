@@ -1,0 +1,39 @@
+@startuml
+title UML sequence behaviour — Render a screen at a tier
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser layout engine" as browser
+  participant "App (app-root)" as shell
+  participant "DashboardPage" as page
+  participant "Design-system foundations (_global.scss)" as global
+end box
+actor -> browser : Open Home at viewport width W
+browser -> shell : Render shell (sl-top-bar and sl-bottom-nav both in DOM)
+shell -> page : Render case cards in .container > .grid-2
+browser -> global : Evaluate respond-to() media queries for W
+alt W below 48rem (768 px)
+  global --> browser : .bottom-nav shown, .topbar hidden; .grid-2 one column (L2-004 criterion 2)
+else W from 48rem to below 62rem
+  global --> browser : .topbar shown; .grid-2 two columns
+else W from 62rem (992 px)
+  global --> browser : .grid-2 two columns (L2-004 criterion 3); roadmap panel beside steps
+end
+browser -> global : Apply .container max-width 1120px, margin-inline auto
+global --> browser : Content column at most 1120 px, centred at 1920 px (L2-004 criterion 4)
+browser -> browser : min-width 0, max-width 100%, overflow-wrap anywhere
+browser --> actor : Screen fits; scrollWidth <= clientWidth from 320 px (L2-004 criterion 1)
+@enduml

@@ -1,0 +1,103 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Answer a wizard question
+
+class AnswerWizardStepCommand <<record>> {
+  +string StepKey
+  +JsonElement? Answer
+}
+
+class AnswerWizardStepCommandValidator {
+  +AnswerWizardStepCommandValidator()
+}
+
+class AnswerWizardStepCommandHandler {
+  +Handle(command: AnswerWizardStepCommand): Task<WizardStateDto>
+}
+
+class GetWizardStepAnswerQueryHandler {
+  +Handle(query: GetWizardStepAnswerQuery): Task<StepAnswerDto>
+}
+
+interface IWizardStep {
+  +string Key
+  +ApplyAsync(context: WizardStepContext, answer: JsonElement?): Task
+  +ReadAsync(context: WizardStepContext): Task<JsonElement?>
+}
+
+class WizardStepContext <<record>> {
+  +Guid ParentAccountId
+  +Guid? ChildId
+  +WizardPlan Plan
+}
+
+class LanguageStep
+class NameStep
+class ContactStep
+class ConsentStep
+class ChildrenStep
+class EligibilityStep
+class ResultStep
+
+class ParentAccount {
+  +Guid Id
+  +string FirstName
+  +string LastName
+  +string DisplayName
+  +Language Language
+  +ContactChannel ContactChannel
+}
+
+enum Language {
+  En
+  Fr
+}
+
+enum ContactChannel {
+  Push
+  Sms
+  Email
+}
+
+class WizardProgress {
+  +string CurrentStepKey
+  +ISet<string> CompletedSteps
+  +byte[] RowVersion
+  +void CompleteStep(stepKey: string, plan: WizardPlan, now: DateTimeOffset)
+}
+
+class WizardPlanner {
+  +WizardPlan Plan(context: WizardContext)
+}
+
+IWizardStep <|.. LanguageStep
+IWizardStep <|.. NameStep
+IWizardStep <|.. ContactStep
+IWizardStep <|.. ConsentStep
+IWizardStep <|.. ChildrenStep
+IWizardStep <|.. EligibilityStep
+IWizardStep <|.. ResultStep
+AnswerWizardStepCommandValidator ..> AnswerWizardStepCommand : validates
+AnswerWizardStepCommandHandler ..> AnswerWizardStepCommand : handles
+AnswerWizardStepCommandHandler --> "*" IWizardStep : resolves by Key
+GetWizardStepAnswerQueryHandler --> "*" IWizardStep : resolves by Key
+AnswerWizardStepCommandHandler ..> WizardPlanner : uses
+AnswerWizardStepCommandHandler --> WizardProgress : CompleteStep
+IWizardStep ..> WizardStepContext : uses
+LanguageStep --> ParentAccount : sets Language
+NameStep --> ParentAccount : sets names
+ContactStep --> ParentAccount : sets ContactChannel
+ParentAccount --> Language : has
+ParentAccount --> ContactChannel : has
+@enduml

@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Offline status and queue
+
+Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Case list, intake save, document upload, /api/_ping")
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(shell, "App shell + sl-banner", "Angular component", "Offline banner with outbox count; failed-item notice")
+  Component(dash, "DashboardPage", "Angular page", "Case list with last updated time")
+  Component(step, "Intake step pages", "Angular pages", "Mark steps Will send when online")
+  Component(conn, "Connectivity", "Angular service", "online signal from browser events and /api/_ping")
+  Component(cases, "CachingCasesService", "CASES_SERVICE decorator", "Device snapshot first, then network")
+  Component(qintake, "QueueingIntakeService", "INTAKE_SERVICE decorator", "Enqueues saves when offline")
+  Component(qdocs, "QueueingDocumentsService", "DOCUMENTS_SERVICE decorator", "Enqueues uploads when offline")
+  Component(outbox, "IndexedDbOutbox", "OUTBOX implementation", "Ordered outbox items")
+  Component(replayer, "OutboxReplayer", "Angular service", "Sends items in seq order")
+  Component(purger, "DeviceDataPurger", "Angular service", "Deletes device data at sign-out")
+  ComponentDb(idb, "Device store", "IndexedDB seedlings-device", "caseSnapshots, outbox, meta")
+}
+Rel(dash, cases, "list()")
+Rel(step, qintake, "save()")
+Rel(step, qdocs, "upload()")
+Rel(shell, conn, "Reads online")
+Rel(shell, outbox, "Reads count and failed items")
+Rel(cases, idb, "Reads and writes snapshots")
+Rel(qintake, outbox, "enqueue()")
+Rel(qdocs, outbox, "enqueue()")
+Rel(outbox, idb, "Stores items")
+Rel(replayer, conn, "Triggers on online")
+Rel(replayer, outbox, "Drains in seq order")
+Rel(replayer, api, "Replays requests", "JSON/HTTPS")
+Rel(cases, api, "GET case list", "JSON/HTTPS")
+Rel(conn, api, "GET /api/_ping", "HTTPS")
+Rel(purger, idb, "Deletes database")
+@enduml

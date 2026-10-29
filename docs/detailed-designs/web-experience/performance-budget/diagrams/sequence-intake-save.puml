@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Save an intake field
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Intake step page" as page
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RequestTimingBehavior" as timing
+  participant "ValidationBehavior" as validation
+  participant "SaveIntakeFieldCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "Application Insights" as ai
+end box
+box "Backend — Seedlings Worker" #D1FADF
+  participant "Deferred agent work" as worker
+end box
+actor -> page : Answer a question
+page -> client : save(caseId, stepKey, field)
+client -> controller : Save request
+controller -> timing : Send SaveIntakeFieldCommand
+timing -> validation : next()
+validation -> handler : Valid command
+handler -> db : Upsert IntakeField on unique (CaseId, StepKey, FieldKey); SaveChangesAsync once
+db --> handler : Committed
+handler --> timing : Done; no call to Claude awaited
+timing -> ai : Record duration, tag SaveIntakeFieldCommand
+timing --> controller : Result
+controller --> client : 2xx (p95 < 300 ms, L2-048 criterion 2)
+client --> page : Saved
+page --> actor : Next question
+worker -> db : Later, pick up agent work the save made possible
+@enduml

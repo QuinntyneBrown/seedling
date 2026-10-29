@@ -1,0 +1,73 @@
+@startuml
+title UML sequence behaviour — Verify a one-time code
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "VerifyCodePage" as page
+  participant "HttpAuthService" as client
+  participant "SESSION_STORE" as store
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AuthController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "VerifyCodeCommandHandler" as handler
+  participant "VerificationChallenge" as challenge
+  participant "ISessionIssuer" as issuer
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+actor -> page : Enter 6 digits, tap Continue
+page -> client : verifyCode(challengeId, code)
+client -> controller : POST /api/auth/codes/{challengeId}/verify [AllowAnonymous]
+controller -> handler : Send VerifyCodeCommand
+handler -> db : Load challenge by id
+db --> handler : Challenge or none
+handler -> challenge : Verify(code, hasher, now)
+alt now >= ExpiresAt (L2-007 #4)
+  challenge --> handler : Expired
+  handler --> controller : BadRequestException code_expired
+  controller --> client : 400 ProblemDetails code_expired
+  page --> actor : Code has expired, offer Send a new code
+else Wrong code, FailedAttempts < 5
+  challenge --> handler : Incorrect
+  handler -> db : Save FailedAttempts + 1
+  controller --> client : 400 ProblemDetails code_incorrect
+  page --> actor : Code does not match, try again
+else Fifth wrong code, or challenge unknown or already invalidated (L2-007 #3)
+  challenge --> handler : Invalidated (InvalidatedAt set)
+  handler -> db : Save challenge
+  controller --> client : 400 ProblemDetails code_invalidated
+  page --> actor : Code no longer works, request a new one
+else Correct code within 10 minutes (L2-007 #1)
+  challenge --> handler : Accepted (ConsumedAt set)
+  handler -> db : Find ParentAccount by normalized destination
+  db --> handler : Account or none
+  opt No account yet
+    handler -> handler : ParentAccount.CreateFor(destination, channel, now)
+  end
+  handler -> issuer : IssueAsync(account)
+  issuer --> handler : SessionTokens
+  handler -> db : Save account, challenge and refresh token in one unit of work
+  db --> handler : Committed
+  handler --> controller : SessionTokens
+  controller --> client : 200 SessionTokens
+  client -> store : Store access token and refresh token
+  page --> actor : Open the wizard entry (L2-036)
+end
+@enduml

@@ -1,0 +1,51 @@
+@startuml
+title UML sequence behaviour — Return from the hosted checkout
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CheckoutReturnPage" as page
+  participant "HttpBillingService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "BillingController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetPaymentStatusQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Browser returns to /cases/{caseId}/checkout/return?payment={paymentId}
+page --> actor : "Confirming your payment"
+loop until status is not Pending, every <TO SUPPLY> s for at most <TO SUPPLY> s
+  page -> client : getPaymentStatus(caseId, paymentId)
+  client -> controller : GET /api/cases/{caseId}/payments/{paymentId}
+  controller -> controller : Authenticate and apply case authorization
+  controller -> handler : Send GetPaymentStatusQuery
+  handler -> db : Read Payment
+  db --> handler : Payment
+  handler --> controller : PaymentStatusDto
+  controller --> client : 200 OK
+  client --> page : Status
+end
+alt Paid
+  page --> actor : Route to Approve and send; case shows Paid and Approve and submit is enabled (L2-030 AC1)
+else Failed or cancelled
+  page --> actor : Route to the plan screen with the failure reason; no charge recorded (L2-030 AC2)
+else still Pending after the wait
+  page --> actor : Explain the payment is still being confirmed; dashboard updates when the webhook lands
+end
+@enduml

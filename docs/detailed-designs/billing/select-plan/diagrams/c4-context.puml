@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Select a plan
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(payments, "Payment provider", "Hosted checkout and signed webhooks; card numbers never reach Seedlings")
+
+Rel(parent, seedlings, "Chooses Free, One-time or Annual", "HTTPS")
+Rel(seedlings, payments, "Creates a hosted checkout session", "HTTPS")
+Rel(parent, payments, "Enters card details on the hosted page", "HTTPS")
+@enduml

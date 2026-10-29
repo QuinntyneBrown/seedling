@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Confirm deposits
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(parent, seedlings, "Sees deposit amounts and dates in")
+Rel(provider, seedlings, "Reports CLB and CESG deposits to", "<TO SUPPLY> channel")
+Rel(seedlings, reviewer, "Queues overdue deposits for")
+Rel(seedlings, push, "Alerts parent via")
+Rel(seedlings, sms, "Alerts parent via")
+Rel(seedlings, email, "Alerts parent via")
+@enduml

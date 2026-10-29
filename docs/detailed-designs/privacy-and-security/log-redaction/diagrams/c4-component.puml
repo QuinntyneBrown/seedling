@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Log redaction
+
+Container_Boundary(api, "Seedlings API") {
+  Component(program, "Program.cs Serilog setup", "UseSerilog", "ReadFrom.Configuration, Enrich.FromLogContext, sinks")
+  Component(config, "SeedlingLogging.ConfigureRedaction", "Seedling.Infrastructure/Logging", "Shared by API and Worker")
+  Component(destr, "SensitiveDestructuringPolicy", "Serilog IDestructuringPolicy", "Masks [Sensitive] members of destructured objects")
+  Component(enricher, "RedactionEnricher", "Serilog ILogEventEnricher", "Masks properties by name and SIN or JWT pattern")
+  Component(sink, "RedactingSink", "Serilog ILogEventSink wrapper", "Rewrites exception text before any sink writes")
+  Component(redactor, "PersonalDataRedactor", "Infrastructure service", "Single source of names and patterns")
+  Component(reqlog, "Serilog request logging", "UseSerilogRequestLogging", "Method, path, status, elapsed; no bodies or query")
+  Component(exmw, "ExceptionHandlingMiddleware", "ASP.NET Core middleware", "LogError for unhandled exceptions")
+  Component(ef, "AppDbContext", "EF Core", "EnableSensitiveDataLogging off")
+}
+System_Ext(logfiles, "App Service log files", "Console and file sinks")
+
+Rel(program, config, "Calls")
+Rel(config, destr, "Registers")
+Rel(config, enricher, "Registers")
+Rel(config, sink, "Wraps Console and File sinks with")
+Rel(destr, redactor, "Uses")
+Rel(enricher, redactor, "Uses")
+Rel(sink, redactor, "Uses")
+Rel(reqlog, enricher, "Events pass through")
+Rel(exmw, sink, "Error events pass through")
+Rel(ef, enricher, "EF events pass through")
+Rel(sink, logfiles, "Writes redacted events")
+@enduml

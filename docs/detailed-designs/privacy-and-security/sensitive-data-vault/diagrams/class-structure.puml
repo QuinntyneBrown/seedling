@@ -1,0 +1,142 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Sensitive data vault
+
+enum SinSubject {
+  Parent
+  Child
+}
+
+enum VaultActorKind {
+  Parent
+  Reviewer
+  Agent
+  System
+}
+
+enum VaultAccessPurpose {
+  ShowMasked
+  ShowToParent
+  PrefillForm
+  SubmitApplication
+  ReviewCase
+  ExportData
+  DeleteData
+}
+
+class SinRecord {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid CaseId
+  +SinSubject Subject
+  +byte[] CipherText
+  +string LastThree
+  +DateTimeOffset StoredAt
+}
+
+class IdentityDocument {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid CaseId
+  +string Kind
+  +string ContentType
+  +long Length
+  +string BlobName
+  +DateTimeOffset StoredAt
+  +DateTimeOffset? DeletedAt
+}
+
+class VaultAccessLogEntry {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid VaultItemId
+  +string ItemKind
+  +VaultActorKind ActorKind
+  +string ActorId
+  +VaultAccessPurpose Purpose
+  +DateTimeOffset At
+}
+
+class VaultAccess <<record>> {
+  +VaultActorKind ActorKind
+  +string ActorId
+  +VaultAccessPurpose Purpose
+}
+
+interface ISensitiveDataVault {
+  +StoreSinAsync(caseId: Guid, subject: SinSubject, sin: string): Task<string>
+  +GetMaskedSinsAsync(caseId: Guid, access: VaultAccess): Task<IReadOnlyList<SinSummaryDto>>
+  +RevealSinAsync(caseId: Guid, subject: SinSubject, access: VaultAccess): Task<string>
+  +StoreDocumentAsync(caseId: Guid, kind: string, content: Stream, contentType: string): Task<Guid>
+  +OpenDocumentAsync(documentId: Guid, access: VaultAccess): Task<Stream>
+}
+
+class SensitiveDataVault {
+  -VaultDbContext _db
+  -IDocumentBlobStore _blobs
+  -IFieldProtector _protector
+  -IDateTimeProvider _clock
+}
+
+interface IFieldProtector {
+  +Protect(plaintext: byte[], purpose: string): byte[]
+  +Unprotect(ciphertext: byte[], purpose: string): byte[]
+}
+
+interface IDocumentBlobStore {
+  +WriteAsync(name: string, bytes: byte[]): Task
+  +ReadAsync(name: string): Task<byte[]>
+  +DeleteAsync(name: string): Task
+}
+
+class VaultDbContext <<EF Core, schema vault>> {
+  +DbSet<SinRecord> Sins
+  +DbSet<IdentityDocument> Documents
+  +DbSet<VaultAccessLogEntry> AccessLog
+}
+
+class RecentAuthenticationRequirement {
+  +TimeSpan MaxAge = 5 min
+}
+
+class RecentAuthenticationHandler {
+  -IDateTimeProvider _clock
+  #HandleRequirementAsync(ctx, req): Task
+}
+
+class RevealSinQuery {
+  +Guid CaseId
+  +SinSubject Subject
+}
+
+class RevealSinQueryHandler {
+  -ICurrentUser _user
+  -ISensitiveDataVault _vault
+}
+
+SensitiveDataVault ..|> ISensitiveDataVault
+SensitiveDataVault --> VaultDbContext
+SensitiveDataVault --> IDocumentBlobStore
+SensitiveDataVault --> IFieldProtector
+VaultDbContext "1" *-- "*" SinRecord
+VaultDbContext "1" *-- "*" IdentityDocument
+VaultDbContext "1" *-- "*" VaultAccessLogEntry
+SinRecord --> SinSubject
+VaultAccessLogEntry --> VaultAccessPurpose
+VaultAccessLogEntry --> VaultActorKind
+ISensitiveDataVault ..> VaultAccess : every read takes
+RevealSinQueryHandler ..> RevealSinQuery : handles
+RevealSinQueryHandler --> ISensitiveDataVault
+RecentAuthenticationHandler ..> RecentAuthenticationRequirement : evaluates
+@enduml

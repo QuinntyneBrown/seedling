@@ -1,0 +1,31 @@
+@startuml
+title UML sequence behaviour — Read a screen at 200% text on 320 px
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent (200% text)" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser layout engine" as browser
+  participant "Design-system foundations" as global
+  participant "Screen" as screen
+end box
+actor -> browser : Set text size to 200% on a 320 px phone
+browser -> browser : Root font size 16 px becomes 32 px
+browser -> global : Evaluate rem breakpoints (36rem now equals 1152 px)
+global --> browser : Extra-small tier rules apply
+browser -> screen : Lay out rem-sized type with no fixed heights around text
+screen -> screen : Text wraps; .container keeps 100% width; min-width 0 on grid children
+screen --> browser : No clipped or overlapping text; no horizontal scroll
+browser --> actor : All content readable (L2-049 criterion 4)
+@enduml

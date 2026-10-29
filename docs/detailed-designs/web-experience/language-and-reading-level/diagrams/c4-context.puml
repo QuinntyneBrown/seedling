@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Language and reading level
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Hosts the Claude model the case agent calls")
+
+Rel(parent, seedlings, "Reads and chooses English or French")
+Rel(seedlings, email, "Sends messages in the parent's language")
+Rel(seedlings, sms, "Sends messages in the parent's language")
+Rel(seedlings, push, "Sends messages in the parent's language")
+Rel(seedlings, foundry, "Asks for parent-facing text in the parent's language")
+@enduml

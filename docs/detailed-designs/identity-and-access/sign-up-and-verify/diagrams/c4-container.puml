@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Sign up and verify
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+
+Rel(parent, pwa, "Enters destination and code", "HTTPS")
+Rel(pwa, api, "POST /api/auth/codes, POST /api/auth/codes/{id}/verify", "JSON/HTTPS, anonymous")
+Rel(api, db, "Reads and writes challenges and accounts", "EF Core")
+Rel(api, email, "Sends code", "HTTPS")
+Rel(api, sms, "Sends code", "HTTPS")
+@enduml

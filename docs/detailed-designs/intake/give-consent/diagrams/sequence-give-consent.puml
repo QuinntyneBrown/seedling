@@ -1,0 +1,51 @@
+@startuml
+title UML sequence behaviour — Give consent on the intake consent step
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeConsentPage" as page
+  participant "HttpConsentService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ConsentsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GiveConsentCommandHandler" as handler
+  participant "IAuditTrail" as audit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Open intake step 1 of 10
+page --> actor : Show one row per detail with why and who receives it (L2-010)
+actor -> page : Tick "I agree" and tap Continue
+page -> client : giveConsent(caseIds, [IdentityDocuments, Sin, Financial], "consent.v1")
+client -> controller : POST /api/cases/{caseId}/consents
+controller -> controller : Authenticate and apply case authorization
+controller -> handler : Send GiveConsentCommand
+handler -> db : Load parent's cases and existing ConsentRecord rows
+db --> handler : Cases and records
+loop each case and category without a record
+  handler -> db : Insert ConsentRecord(GivenAt = IDateTimeProvider.UtcNow)
+  handler -> audit : Append AuditEntry(Actor = Parent, Action = ConsentGiven) (L2-010 AC2)
+end
+handler -> db : Save changes in one unit of work
+db --> handler : Commit result
+handler --> controller : ConsentDto list (existing records returned unchanged on retry)
+controller --> client : 200 OK with consents
+client --> page : Consent result
+page --> actor : Navigate to "Your legal name and birth date"
+@enduml

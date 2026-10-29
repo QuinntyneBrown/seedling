@@ -1,0 +1,45 @@
+@startuml
+title UML sequence behaviour — Report a new child
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as parent
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "LifeChangePage" as page
+  participant "HttpLifeChangesService (LIFE_CHANGES_SERVICE)" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "LifeChangesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ReportLifeChangeCommandHandler" as handler
+  participant "NewChildChangeProcessor" as proc
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+parent -> page : Choose new child, Continue
+page -> client : report({kind: NewChild, clientRequestId})
+client -> controller : POST /api/life-changes
+controller -> handler : Send ReportLifeChangeCommand
+handler -> proc : ProcessAsync(change, command)
+proc --> handler : OpenChildProfile, NextRoute "/children/new"
+handler -> db : Save LifeChange (CaseId null) and audit entry
+db --> handler : Commit result
+handler --> controller : LifeChangeResultDto
+controller --> client : 201 Created
+client --> page : NextRoute
+page -> page : router.navigateByUrl(NextRoute)
+page --> parent : Child-profile flow opens (L2-025 AC3, L2-009)
+@enduml

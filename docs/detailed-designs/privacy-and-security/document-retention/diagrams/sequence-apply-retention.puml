@@ -1,0 +1,49 @@
+@startuml
+title UML sequence behaviour — Delete or retain documents 30 days after the account opens
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "DocumentRetentionJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "ApplyDocumentRetentionCommandHandler" as handler
+  participant "DocumentRetentionPolicy" as policy
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  participant "AuditTrail" as audit
+  participant "NotificationDispatcher" as notify
+  database "Seedlings database" as db
+  database "Sensitive data vault" as vdb
+end box
+job -> handler : Send ApplyDocumentRetentionCommand on schedule
+handler -> db : Select cases with DocumentsDueAt <= now and DocumentsResolvedAt null
+loop each due case
+  handler -> policy : Decide(case, parent DocumentRetention, now)
+  alt Delete (L2-033 AC1)
+    policy --> handler : Delete
+    handler -> vault : DeleteCaseDocumentsAsync(caseId, VaultAccess(System, DeleteData))
+    vault -> vdb : Delete blobs, mark IdentityDocument.DeletedAt, log access
+    vdb --> vault : Done
+    handler -> audit : AppendAsync(Actor System, Action DocumentsDeleted)
+    handler -> notify : SendAsync(parent, DocumentsDeleted, /settings/privacy)
+  else Retain (L2-033 AC2)
+    policy --> handler : Retain
+    handler -> audit : AppendAsync(Actor System, Action DocumentsRetained, reason Keep)
+  end
+  handler -> db : Set DocumentsResolvedAt; SaveChangesAsync
+end
+handler --> job : Count deleted and retained
+@enduml

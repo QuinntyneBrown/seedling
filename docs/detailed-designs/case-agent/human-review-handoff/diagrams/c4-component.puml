@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Human review handoff
+
+Container(admin, "Admin app", "Angular", "ReviewQueuePage, ReviewCasePage, ReturnCaseDialog via REVIEW_QUEUE_SERVICE")
+Container(worker, "Seedlings Worker", ".NET 10", "CheckPendingSubmissionsCommandHandler")
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "ReviewQueueController", "ASP.NET Core controller, Reviewer policy", "List, open, return")
+  Component(enqueue, "EnqueueForReviewCommandHandler", "MediatR handler", "Adds ReviewItem, holds the case, tells the parent")
+  Component(getCase, "GetReviewCaseQueryHandler", "MediatR handler", "Case detail for an open item")
+  Component(ret, "ReturnCaseFromReviewCommandHandler", "MediatR handler", "Resolves and hands back")
+  Component(resumer, "CaseAgentResumer", "Application service", "Failed step key to command")
+  Component(steps, "Step handlers", "MediatR handlers", "SelectProvider, PrefillForms, SubmitApplication")
+  Component(vaultPort, "ISensitiveDataVault", "Port", "Access-logged reads")
+  Component(notify, "INotificationDispatcher", "Application service", "Parent notification")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ReviewItem, AttentionItem, RespCase, AuditEntry")
+}
+
+Rel(admin, ctrl, "Calls", "JSON/HTTPS")
+Rel(worker, enqueue, "Sends EnqueueForReviewCommand")
+Rel(ctrl, getCase, "Sends GetReviewCaseQuery")
+Rel(ctrl, ret, "Sends ReturnCaseFromReviewCommand")
+Rel(getCase, vaultPort, "Reads with reviewer and purpose")
+Rel(ret, resumer, "ResumeAsync(case, failedStep)")
+Rel(resumer, steps, "Sends step command")
+Rel(enqueue, notify, "A person is checking this")
+Rel(enqueue, db, "Writes", "EF Core")
+Rel(ret, db, "Writes", "EF Core")
+Rel(getCase, db, "Reads", "EF Core")
+@enduml

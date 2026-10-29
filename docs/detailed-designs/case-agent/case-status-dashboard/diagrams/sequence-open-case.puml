@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Open a case that needs attention
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "CasesController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetCaseQueryHandler" as handler
+  participant "CaseStatusPresenter" as presenter
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap the case card
+page -> client : getCase(caseId)
+client -> controller : GET /api/cases/{caseId}
+controller -> handler : Send GetCaseQuery
+handler -> db : Load case for current parent (L2-045)
+db --> handler : Case or none
+alt case belongs to another parent
+  handler --> controller : NotFoundException
+  controller --> client : 404 ProblemDetails
+else own case
+  handler -> db : Load open AttentionItem, open blocking ReviewItem, timeline, AuditEntry newest first, grants
+  db --> handler : Detail data
+  handler -> presenter : Present(context)
+  alt parent task open
+    presenter --> handler : NeedsAttention view with the specific item and its action
+  else in review
+    presenter --> handler : NeedsAttention view: A person is checking this
+  end
+  handler --> controller : CaseDetailDto
+  controller --> client : 200
+  client --> page : Detail
+  page --> actor : Attention banner first (L2-021), then timeline, activity, grants
+end
+@enduml

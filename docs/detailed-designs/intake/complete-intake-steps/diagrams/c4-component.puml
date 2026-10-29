@@ -1,0 +1,34 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Complete intake steps
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(pages, "Intake step pages", "Angular pages (app-intake-*)", "One page per step: identity, address, child, SINs, existing RESP, contact")
+  Component(store, "IntakeFlowStore", "Signal store", "Step plan, answers, save state, current step")
+  Component(autosave, "AutosaveField", "Angular directive", "Saves a field on change and drives the Saved indicator")
+  Component(client, "HttpIntakeService", "Angular service behind INTAKE_SERVICE", "Calls /api/intake endpoints")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "IntakeController", "ASP.NET Core controller", "Exposes /api/intake and /api/cases/{caseId}/sin")
+  Component(save, "SaveIntakeFieldCommandHandler", "MediatR handler", "Upserts one IntakeField")
+  Component(advance, "AdvanceIntakeStepCommandHandler", "MediatR handler", "Checks required fields and moves to the next step")
+  Component(sin, "SaveSinCommandHandler", "MediatR handler", "Checks gates and stores a SIN in the vault")
+  Component(planner, "IntakeStepPlanner", "Domain service", "Ordered applicable steps; skips existing RESP when none exists")
+  Component(policy, "IConsentPolicy", "Application port", "Consent check (give-consent)")
+  Component(vaultport, "ISensitiveDataVault", "Application port", "Vault writes (sensitive-data-vault)")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "IntakeField, WizardProgress")
+}
+Rel(pages, store, "Reads and updates")
+Rel(autosave, store, "Reports save state")
+Rel(store, client, "Calls")
+Rel(client, ctrl, "JSON/HTTPS")
+Rel(ctrl, save, "Sends SaveIntakeFieldCommand")
+Rel(ctrl, advance, "Sends AdvanceIntakeStepCommand")
+Rel(ctrl, sin, "Sends SaveSinCommand")
+Rel(advance, planner, "Asks for the next step")
+Rel(save, db, "Upserts", "EF Core")
+Rel(advance, db, "Updates WizardProgress", "EF Core")
+Rel(sin, policy, "EnsureGivenAsync(Sin)")
+Rel(sin, vaultport, "StoreSinAsync")
+@enduml

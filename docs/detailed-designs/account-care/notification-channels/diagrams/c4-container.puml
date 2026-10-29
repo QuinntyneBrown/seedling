@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Notification channels
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+
+Rel(parent, pwa, "Settings > How we reach you; opens deep links", "HTTPS")
+Rel(pwa, api, "PUT notification channel, POST push subscription", "JSON/HTTPS")
+Rel(pwa, push, "Subscribes (SwPush)", "Push API")
+Rel(api, db, "Stores channel, subscriptions, Notification rows", "EF Core")
+Rel(api, push, "Sends", "Web Push")
+Rel(api, sms, "Sends", "HTTPS")
+Rel(api, email, "Sends", "HTTPS")
+Rel(worker, db, "Writes Notification rows", "EF Core")
+Rel(worker, sms, "Sends daily-check alerts via the same dispatcher")
+@enduml

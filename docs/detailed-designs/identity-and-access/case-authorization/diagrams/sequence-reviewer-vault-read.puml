@@ -1,0 +1,63 @@
+@startuml
+title UML sequence behaviour — Reviewer reads vault data
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Human reviewer" as actor
+box "Frontend — Admin app" #E0F2FE
+  participant "Review case page" as page
+  participant "HttpReviewService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Reviewer policy" as policy
+  participant "ReviewQueueController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetReviewCaseQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "ISensitiveDataVault adapter" as vaultport
+  database "Sensitive data vault" as vault
+end box
+
+actor -> page : Open case from review queue
+page -> client : getReviewCase(caseId)
+client -> policy : GET /api/review/cases/{caseId} (reviewer token)
+alt Token lacks role = reviewer
+  policy --> client : 403 ProblemDetails
+else Reviewer
+  policy -> controller : Admitted
+  controller -> handler : Send GetReviewCaseQuery(caseId)
+  handler -> db : Find unresolved ReviewItem for case (IgnoreQueryFilters)
+  db --> handler : ReviewItem or none
+  alt No open ReviewItem
+    handler --> controller : NotFoundException
+    controller --> client : 404 ProblemDetails, no data
+  else Open ReviewItem
+    handler -> db : Load case and intake (IgnoreQueryFilters, this case only)
+    db --> handler : Case data
+    handler -> vaultport : ReadAsync(itemId, VaultAccessContext(Reviewer, reviewerId, "Review item {id}"))
+    vaultport -> vault : Append VaultAccessLogEntry(Actor, Purpose, At) (L2-045 #3)
+    vault --> vaultport : Committed
+    vaultport -> vault : Read SIN or document
+    vault --> vaultport : Decrypted item
+    vaultport --> handler : VaultItem
+    handler --> controller : ReviewCaseDto
+    controller --> client : 200 ReviewCaseDto
+    client --> page : Case with vault data
+    page --> actor : Case under review
+  end
+end
+@enduml

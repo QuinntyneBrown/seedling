@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Human review handoff
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(provider, seedlings, "Reports a rejected document via status check", "Protocol <TO SUPPLY>")
+Rel(seedlings, push, "Tells the parent a person is checking")
+Rel(parent, seedlings, "Sees A person is checking this", "HTTPS")
+Rel(reviewer, seedlings, "Works the review queue and returns cases", "HTTPS, admin app")
+@enduml

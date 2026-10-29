@@ -1,0 +1,33 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Language and reading level
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(settings, "SettingsPage", "Angular page", "Language .segments control")
+  Component(store, "I18nStore", "Angular service", "language, locale, t(), use()")
+  Component(pipe, "TranslatePipe (t)", "Angular pipe", "Looks up catalog keys")
+  Component(interceptor, "LanguageHeaderInterceptor", "HTTP interceptor", "Adds Accept-Language")
+  Component(account, "HttpAccountService", "ACCOUNT_SERVICE implementation", "changeLanguage()")
+  ComponentDb(catalogs, "en.json / fr.json", "String catalogs", "Precached by the service worker")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "AccountController", "ASP.NET Core controller", "PUT /api/account/language")
+  Component(loc, "RequestLocalizationMiddleware", "ASP.NET Core middleware", "en-CA, fr-CA; default en-CA")
+  Component(handler, "ChangeLanguageCommandHandler", "MediatR handler", "Sets ParentAccount.Language")
+  Component(entity, "ParentAccount", "Domain entity", "Language En or Fr")
+  Component(dispatch, "INotificationDispatcher", "Application port", "Picks template by Language")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "ParentAccount")
+}
+Rel(settings, store, "use(language)")
+Rel(pipe, store, "t(key)")
+Rel(store, catalogs, "Fetches")
+Rel(settings, account, "changeLanguage()")
+Rel(account, interceptor, "Passes through")
+Rel(interceptor, loc, "Accept-Language", "JSON/HTTPS")
+Rel(loc, ctrl, "Request culture")
+Rel(ctrl, handler, "Sends ChangeLanguageCommand")
+Rel(handler, entity, "Mutates")
+Rel(handler, db, "Saves", "EF Core")
+Rel(dispatch, db, "Reads Language", "EF Core")
+@enduml

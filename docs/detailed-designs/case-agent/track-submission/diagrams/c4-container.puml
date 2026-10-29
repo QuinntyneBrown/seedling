@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Track a submission
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Cases, submissions, review items, audit trail")
+}
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(worker, db, "Reads open submissions, writes outcomes", "EF Core")
+Rel(worker, provider, "GetApplicationStatus", "Protocol <TO SUPPLY>")
+Rel(worker, push, "Sends notification", "Web Push")
+Rel(parent, pwa, "Opens Home and the case", "HTTPS")
+Rel(pwa, api, "GET cases", "JSON/HTTPS")
+Rel(api, db, "Reads case status", "EF Core")
+@enduml

@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Detect and offer a new version
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "App (app-root)" as shell
+  participant "sl-banner" as banner
+  participant "AppUpdate" as update
+  participant "SwUpdate" as swupdate
+  participant "ngsw-worker.js" as sw
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "Azure Static Web App" as swa
+end box
+actor -> shell : Open the app online
+shell -> update : start() once the app is stable
+update -> swupdate : checkForUpdate()
+swupdate -> sw : CHECK_FOR_UPDATES
+sw -> swa : GET /ngsw.json (Cache-Control: no-cache)
+swa --> sw : Manifest with a new hash
+sw -> swa : Download changed shell files
+swa --> sw : New version
+sw --> swupdate : VERSION_READY
+swupdate --> update : versionUpdates emits VERSION_READY
+update -> update : updateReady = true
+shell -> banner : Render reload prompt (L2-002 criterion 2)
+banner --> actor : "A new version is ready" with Reload (copy <TO SUPPLY>)
+alt Parent chooses Reload
+  actor -> banner : Reload
+  banner -> shell : action
+  shell -> update : reload()
+  update -> swupdate : activateUpdate()
+  swupdate --> update : true
+  update -> shell : document.location.reload()
+  shell --> actor : New version running
+else Parent dismisses the prompt
+  actor -> banner : Dismiss
+  banner -> shell : Hide prompt; tab keeps the running version
+  actor -> shell : Close the app, open it later
+  shell -> sw : Cold start navigation
+  sw --> shell : Serve the new version; no client holds the old one (L2-002 criterion 3)
+  shell --> actor : New version active
+end
+@enduml

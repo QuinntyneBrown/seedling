@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — Reviewer reads a vault item
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Human reviewer" as actor
+box "Frontend — Seedlings Admin app" #E0F2FE
+  participant "ReviewCasePage" as page
+  participant "HttpReviewService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ReviewController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetReviewCaseVaultItemQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "SensitiveDataVault" as vault
+  database "Sensitive data vault" as vdb
+end box
+actor -> page : Open document on a queued case
+page -> client : getDocument(caseId, documentId)
+client -> ctrl : GET /api/review/cases/{caseId}/documents/{id}
+ctrl -> ctrl : Require Reviewer role and RecentAuthentication
+ctrl -> handler : Send query with ReviewItem id
+handler -> handler : Confirm case is in the review queue
+handler -> vault : OpenDocumentAsync(id, VaultAccess(Reviewer, reviewerId, ReviewCase))
+vault -> vdb : INSERT VaultAccessLogEntry (L2-032 AC2)
+vault -> vdb : Read encrypted blob
+vault -> vault : Unprotect bytes
+vault --> handler : Stream
+handler --> ctrl : File result
+ctrl --> client : 200, Cache-Control: no-store
+client --> page : Document
+page --> actor : Show document
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+title UML sequence behaviour — Resume on another device
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA (laptop)" #E0F2FE
+  participant "VerifyCodePage" as page
+  participant "HttpAccountService" as client
+  participant "Intake step page" as step
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "AccountController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetResumePointQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+
+note over actor : Two intake steps were completed on the phone
+actor -> page : Verify code on the laptop (sign-up-and-verify)
+page -> client : getResumePoint()
+client -> controller : GET /api/me/resume-point (bearer)
+controller -> handler : Send GetResumePointQuery(ParentAccountId from ICurrentUser)
+handler -> db : Read WizardProgress for parent
+db --> handler : Wizard finished
+handler -> db : Read cases with incomplete intake, oldest first
+db --> handler : RespCase with CurrentStepKey = step three
+alt Wizard unfinished
+  handler --> controller : Wizard, StepKey
+else Intake incomplete (L2-008 #1)
+  handler --> controller : Intake, CaseId, StepKey = step three
+else Nothing in progress
+  handler --> controller : Dashboard
+end
+controller --> client : 200 ResumePointDto
+client --> page : Resume point
+page -> step : Navigate to /cases/{caseId}/intake/{stepKey}
+step -> step : Load case and saved answers through CASES_SERVICE, network first (L2-008 #2)
+step --> actor : Intake opens at step three with earlier answers
+@enduml

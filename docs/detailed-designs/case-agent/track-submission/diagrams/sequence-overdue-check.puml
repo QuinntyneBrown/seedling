@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Daily check finds no confirmation
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "TrackSubmissionsJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "CheckPendingSubmissionsCommandHandler" as check
+  participant "BusinessCalendar" as calendar
+  participant "EnqueueForReviewCommandHandler" as enqueue
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IProviderGateway" as gateway
+  participant "INotificationDispatcher" as notify
+  database "Seedlings database" as db
+end box
+participant "RESP provider" as provider
+job -> check : Send CheckPendingSubmissionsCommand (daily)
+check -> db : Load Provider submissions with no ConfirmedAt
+db --> check : Open submissions
+loop each open submission
+  check -> gateway : GetApplicationStatusAsync(externalReference)
+  gateway -> provider : Status request (protocol <TO SUPPLY>)
+  provider --> gateway : Status
+  gateway --> check : ProviderApplicationStatus
+  check -> db : AuditEntry ProviderStatusChecked
+  alt Rejected
+    check -> enqueue : Send EnqueueForReviewCommand(ProviderRejected, submission) per L2-022
+    enqueue --> check : Case queued, parent told
+  else Pending
+    check -> calendar : BusinessDaysBetween(SubmittedAt, today)
+    calendar --> check : Business days
+    opt 15 or more business days and not yet flagged (L2-019)
+      check -> db : Submission.FlaggedAt = now
+      check -> enqueue : Send EnqueueForReviewCommand(ConfirmationOverdue, BlocksCase = false)
+      enqueue --> check : Follow-up item queued; status stays Submitted
+      check -> notify : The agent is following up with the provider
+      notify --> check : Sent on parent's channel
+      check -> db : Commit with AuditEntry SubmissionFlagged
+    end
+  else status call fails
+    gateway --> check : Error, logged without personal data (L2-047)
+    check -> check : Leave for the next daily run
+  end
+end
+check --> job : CheckSummary
+@enduml

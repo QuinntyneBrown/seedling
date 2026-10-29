@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Run the automated scan
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "CI (Playwright, Chromium)" as actor
+box "Frontend — Playwright suite (e2e/)" #E0F2FE
+  participant "accessibility.spec.ts" as spec
+  participant "Page object" as po
+  participant "expectNoAxeViolations" as axe
+end box
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Screen under test" as screen
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Seedlings API (E2E, SQLite, seeded)" as api
+end box
+actor -> spec : Run tests/accessibility.spec.ts
+loop Each parent-facing route and static state in ROUTES
+  spec -> po : goto(route) and waitForReady()
+  po -> screen : Navigate; sign in when the route needs auth
+  screen -> api : Load data
+  api --> screen : Seeded data
+  screen --> po : body[data-page] and anchor present
+  spec -> axe : expectNoAxeViolations(page)
+  axe -> screen : AxeBuilder.withTags(wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa).analyze()
+  screen --> axe : Results
+  alt violations is empty
+    axe --> spec : Pass (L2-049 criterion 1)
+  else Any violation
+    axe --> spec : Fail with rule id, WCAG criterion and target selectors
+  end
+end
+spec --> actor : Report
+@enduml

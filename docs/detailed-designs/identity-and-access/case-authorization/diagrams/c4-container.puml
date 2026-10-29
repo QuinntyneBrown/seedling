@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Case authorization
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(admin, "Admin app", "Angular", "Reviewer and operator console (frontend/projects/admin)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+  ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+}
+System_Ext(payments, "Payment provider", "Hosted checkout and signed webhooks")
+
+Rel(parent, pwa, "Uses", "HTTPS")
+Rel(reviewer, admin, "Uses", "HTTPS")
+Rel(pwa, api, "Calls with parent bearer token", "JSON/HTTPS")
+Rel(admin, api, "Calls /api/review with reviewer token", "JSON/HTTPS")
+Rel(payments, api, "Webhook, the only anonymous non-auth call", "HTTPS")
+Rel(api, db, "Tenant-filtered reads and writes", "EF Core")
+Rel(api, vault, "Purpose-stated, logged reads", "EF Core, Blob SDK")
+@enduml

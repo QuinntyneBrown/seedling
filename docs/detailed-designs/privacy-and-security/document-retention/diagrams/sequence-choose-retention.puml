@@ -1,0 +1,46 @@
+@startuml
+title UML sequence behaviour — Choose how long document photos are kept
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "PrivacyPage" as page
+  participant "HttpPrivacyService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "PrivacyController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SetDocumentRetentionCommandHandler" as handler
+  participant "ParentAccount" as account
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "AuditTrail" as audit
+  database "Seedlings database" as db
+end box
+actor -> page : Select "Keep until I delete them"
+page -> client : setDocumentRetention(Keep)
+client -> ctrl : PUT /api/me/privacy/document-retention
+ctrl -> handler : Send SetDocumentRetentionCommand
+handler -> db : Load ParentAccount for ICurrentUser
+handler -> account : Set DocumentRetention = Keep
+handler -> audit : AppendAsync(Actor Parent, Action RetentionChoiceChanged) (L2-033 AC2)
+handler -> db : SaveChangesAsync (one unit of work)
+db --> handler : Committed
+handler --> ctrl : DocumentRetentionDto
+ctrl --> client : 200
+client --> page : Choice saved
+page --> actor : Radio stays selected
+@enduml

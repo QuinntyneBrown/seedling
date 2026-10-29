@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Data export and deletion
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(email, "Email service", "Sends verification codes and notifications")
+System_Ext(sms, "SMS service", "Sends verification codes and notifications")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+
+Rel(parent, seedlings, "Requests an export or account deletion using")
+Rel(seedlings, email, "Sends download link and deletion confirmation via")
+Rel(seedlings, sms, "Sends re-authentication code via")
+Rel_U(provider, seedlings, "Keeps its own RESP records; not changed by deletion")
+@enduml

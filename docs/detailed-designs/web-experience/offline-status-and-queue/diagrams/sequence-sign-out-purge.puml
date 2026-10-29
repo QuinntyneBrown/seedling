@@ -1,0 +1,43 @@
+@startuml
+title UML sequence behaviour — Sign out with queued items
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "SettingsPage" as page
+  participant "AuthService" as auth
+  participant "DeviceDataPurger" as purger
+  database "Device store (IndexedDB)" as idb
+  database "Cache Storage" as cache
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "Session endpoint (sessions-and-devices)" as controller
+end box
+actor -> page : Sign out
+page -> auth : signOut()
+opt Online
+  auth -> controller : Revoke refresh token
+  controller --> auth : 204
+end
+auth -> purger : purge()
+purger -> idb : Close and delete seedlings-device (snapshots and outbox)
+idb --> purger : Deleted
+purger -> cache : Delete caches whose name holds :data:
+cache --> purger : Deleted
+purger -> purger : Clear sessionStorage and Seedlings localStorage keys, keep language and install choice
+purger --> auth : Done
+auth --> page : Signed out
+page --> actor : Sign-in screen; no queued items or personal data remain (L2-003 criterion 5)
+@enduml

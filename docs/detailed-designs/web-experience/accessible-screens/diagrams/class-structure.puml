@@ -1,0 +1,70 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Accessible screens
+
+abstract class FieldBase <<design system>> {
+  +fieldId: InputSignal<string>
+  +label: InputSignal<string>
+  +hint: InputSignal<string | undefined>
+  +error: InputSignal<string | undefined>
+  #invalid: Signal<boolean>
+  #describedBy: Signal<string>
+}
+class TextField <<component sl-text-field>>
+class Select <<component sl-select>>
+class ChoiceGroup <<component sl-choice-group>>
+
+class FormErrorFocus <<injectable>> {
+  +focusFirstInvalid(form: HTMLElement, count: number): void
+}
+class LiveAnnouncer <<Angular CDK>> {
+  +announce(message: string, politeness: AriaLivePoliteness): Promise<void>
+}
+class RouteFocus <<injectable>> {
+  +start(): void
+  -focusHeading(): void
+}
+class SeedlingsTitleStrategy {
+  +updateTitle(snapshot: RouterStateSnapshot): void
+}
+abstract class TitleStrategy <<Angular>>
+class ProblemDetailsMapper {
+  +toFieldErrors(problem: ProblemDetails): Map<string, string>
+}
+class ProblemDetails {
+  +type: string
+  +title: string
+  +status: number
+  +errors: Record<string, string[]>
+}
+
+class AxeFixture <<e2e/fixtures/a11y.ts>> {
+  +tags: string[]
+  +expectNoAxeViolations(page: Page): Promise<void>
+}
+abstract class BasePage <<e2e/pages/base.page.ts>> {
+  +main: Locator
+  +skipLink: Locator
+  +focusables(): Locator
+}
+
+FieldBase <|-- TextField
+FieldBase <|-- Select
+FieldBase <|-- ChoiceGroup
+FormErrorFocus --> LiveAnnouncer : announces count
+TitleStrategy <|-- SeedlingsTitleStrategy
+ProblemDetailsMapper ..> ProblemDetails : reads errors
+ProblemDetailsMapper ..> FieldBase : feeds error input
+AxeFixture ..> BasePage : scans page of
+@enduml

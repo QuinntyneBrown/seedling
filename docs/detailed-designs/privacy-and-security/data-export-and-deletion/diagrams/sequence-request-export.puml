@@ -1,0 +1,53 @@
+@startuml
+title UML sequence behaviour — Request a data export
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "PrivacyPage" as page
+  participant "reauthenticationInterceptor" as icpt
+  participant "HttpPrivacyService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DataRequestsController" as ctrl
+  participant "RecentAuthenticationHandler" as policy
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RequestDataExportCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Tap Request my data
+page -> client : requestExport()
+client -> ctrl : POST /api/me/data-requests/export
+ctrl -> policy : Evaluate RecentAuthentication
+opt auth_time older than 5 minutes (L2-034 AC3)
+  ctrl --> icpt : 403 reauthentication_required
+  icpt -> icpt : Open ReauthenticateDialog, confirm code, retry
+  icpt -> ctrl : POST /api/me/data-requests/export
+end
+ctrl -> handler : Send RequestDataExportCommand
+handler -> db : Find open Export request for parent
+alt One is already Pending or Ready
+  db --> handler : Existing DataRequest
+else None open
+  handler -> db : Insert DataRequest(Export, Pending, DueAt = now + 24 h)
+end
+handler --> ctrl : DataRequestDto
+ctrl --> client : 202 Accepted
+client --> page : Request recorded
+page --> actor : "We will email a download link within 24 hours"
+@enduml

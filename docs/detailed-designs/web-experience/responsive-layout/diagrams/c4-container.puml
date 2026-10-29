@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Responsive layout
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling); compiles in the design-system library frontend/projects/components")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain; not involved in layout")
+}
+Rel(parent, pwa, "Uses at any width from 320 px, in either orientation, by touch or pointer", "HTTPS")
+Rel(pwa, api, "Calls for data only; layout is client-side", "JSON/HTTPS")
+@enduml

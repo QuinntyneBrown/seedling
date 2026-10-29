@@ -1,0 +1,92 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Input validation
+
+class "ValidationBehavior<TRequest, TResponse>" as VB {
+  -IEnumerable<IValidator<TRequest>> _validators
+  +Handle(request, next, ct): Task<TResponse>
+}
+
+class ValidationException {
+  +IReadOnlyDictionary<string, string[]> Errors
+}
+
+class ExceptionHandlingMiddleware {
+  +InvokeAsync(context: HttpContext): Task
+}
+
+class SinRules <<static>> {
+  +ValidSin<T>(rule): IRuleBuilderOptions<T, string>
+  +IsValid(value: string): bool
+  -PassesLuhn(digits: string): bool
+}
+
+class PostalCodeRules <<static>> {
+  +CanadianPostalCode<T>(rule): IRuleBuilderOptions<T, string>
+  +Pattern: Regex
+}
+
+class UploadRules <<static>> {
+  +MaxBytes: long = 10 MB
+  +AllowedKinds: JPEG, PNG, HEIC, PDF
+  +AllowedUpload<T>(rule): IRuleBuilderOptions<T, DocumentUpload>
+}
+
+class DocumentUpload {
+  +Stream Content
+  +string ContentType
+  +long Length
+  +string FileName
+}
+
+class SaveDocumentCommand {
+  +Guid CaseId
+  +DocumentKind Kind
+  +DocumentUpload Upload
+  +bool AcceptWithIssues
+}
+
+class FileSignatureInspector {
+  +Detect(header: byte[]): DetectedFileKind
+}
+
+enum DetectedFileKind {
+  Jpeg
+  Png
+  Heic
+  Pdf
+  Unknown
+}
+
+class SaveSinCommandValidator
+class SaveIntakeFieldCommandValidator
+class SaveDocumentCommandValidator
+
+class "AbstractValidator<T>" as AV
+
+AV <|-- SaveSinCommandValidator
+AV <|-- SaveIntakeFieldCommandValidator
+AV <|-- SaveDocumentCommandValidator
+VB --> AV : runs all for TRequest
+VB ..> ValidationException : throws on failure
+ExceptionHandlingMiddleware ..> ValidationException : maps to 400
+SaveSinCommandValidator ..> SinRules
+SaveIntakeFieldCommandValidator ..> PostalCodeRules
+SaveDocumentCommandValidator ..> UploadRules
+UploadRules ..> FileSignatureInspector
+UploadRules ..> DocumentUpload
+SaveDocumentCommand *-- DocumentUpload
+SaveDocumentCommandValidator ..> SaveDocumentCommand : validates
+FileSignatureInspector ..> DetectedFileKind
+@enduml

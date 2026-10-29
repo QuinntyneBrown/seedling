@@ -1,0 +1,53 @@
+@startuml
+title UML sequence behaviour — Append an audit entry with the action
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ApprovePage" as page
+  participant "HttpCasesService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ApprovalsController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RecordApprovalCommandHandler" as handler
+  participant "SubmitApplicationCommandHandler" as submit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "AuditTrail" as audit
+  participant "AppDbContext" as ctx
+  database "Seedlings database" as db
+end box
+actor -> page : Approve and send
+page -> client : approve(caseId)
+client -> ctrl : POST /api/cases/{caseId}/approvals
+ctrl -> handler : Send RecordApprovalCommand(Approved)
+handler -> ctx : Add Approval
+handler -> audit : AppendAsync(Actor Parent, Action Approved) (L2-035)
+audit -> ctx : Add AuditEntry (At = IDateTimeProvider.UtcNow)
+handler -> ctx : SaveChangesAsync
+ctx -> db : INSERT Approval and AuditEntry in one transaction
+handler -> submit : Send SubmitApplicationCommand
+submit -> ctx : Add Submission per target
+submit -> audit : AppendAsync(Actor Agent, Action Submitted, DataSent, Recipient) (L2-035)
+submit -> ctx : SaveChangesAsync
+ctx -> db : INSERT Submission and AuditEntry in one transaction
+submit --> handler : Submitted
+handler --> ctrl : Result
+ctrl --> client : 200
+client --> page : Approved
+page --> actor : Show submitted state
+@enduml

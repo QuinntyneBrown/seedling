@@ -1,0 +1,86 @@
+@startuml
+title UML sequence behaviour — Approve and send
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "ApprovePage" as page
+  participant "HttpCaseApprovalService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ApprovalsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RecordApprovalCommandHandler" as record
+  participant "CaseDataSnapshotBuilder" as snapshot
+  participant "SubmitApplicationCommandHandler" as submit
+  participant "ApprovalGate" as gate
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "ApprovalGatedProviderGateway" as gateway
+  participant "ISensitiveDataVault" as vault
+  database "Seedlings database" as db
+end box
+participant "RESP provider" as provider
+actor -> page : Open Approve and send
+page -> client : getSummary(caseId)
+client -> controller : GET /api/cases/{caseId}/approval-summary
+controller --> client : 200 ApprovalSummaryDto with snapshotHash
+client --> page : Items per recipient
+page --> actor : Exactly what goes, and to whom; nothing sent yet (L2-020)
+actor -> page : Tick attestation, tap Approve and send
+page -> client : approve(caseId, snapshotHash)
+client -> controller : POST /api/cases/{caseId}/approvals
+controller -> record : Send RecordApprovalCommand(Approved)
+record -> snapshot : BuildAsync(caseId)
+snapshot --> record : Current snapshot and hash
+alt hash differs from the one the parent saw
+  record --> controller : ConflictException snapshot_changed
+  controller --> client : 409 ProblemDetails
+  client --> page : Reload summary
+else hash matches
+  record -> db : Save Approval(ApprovedAt, DataSnapshotHash, SharedDataJson) and AuditEntry (L2-020)
+  db --> record : Commit
+  record -> submit : Send SubmitApplicationCommand
+  submit -> snapshot : Recompute hash
+  snapshot --> submit : Hash
+  submit -> gate : EnsureApproved(case, approvals, hash)
+  gate --> submit : Matching approval
+  submit -> vault : Read SINs and documents, purpose Submission
+  vault --> submit : Package items; reads logged
+  submit -> gateway : SubmitApplicationAsync(package)
+  gateway -> gate : EnsureApproved again
+  gate --> gateway : Pass
+  gateway -> provider : Send application and SDE 0093 (protocol <TO SUPPLY>)
+  alt provider reachable
+    provider --> gateway : Receipt
+    gateway --> submit : ProviderReceipt
+    submit -> db : Save Submission per target, AuditEntry DataSent and Recipient, status Submitted
+    db --> submit : Commit
+    submit --> record : Submissions
+    record --> controller : ApprovalResultDto
+    controller --> client : 200
+    client --> page : Sent
+    page --> actor : Navigate to Sent screen
+  else provider unreachable
+    provider --> gateway : Timeout or error
+    gateway --> submit : ProviderUnavailableException
+    submit --> controller : Exception; approval stays recorded
+    controller --> client : 503 provider_unavailable
+    client --> page : Error
+    page --> actor : C-03 error with Try again (POST submissions)
+  end
+end
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Human review handoff
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(admin, "Admin app", "Angular", "Reviewer and operator console (frontend/projects/admin)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Cases, review items, attention items, audit trail")
+  ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+}
+System_Ext(push, "Web Push service", "Browser push endpoints (VAPID)")
+
+Rel(reviewer, admin, "Uses", "HTTPS")
+Rel(admin, api, "GET review-queue, POST return", "JSON/HTTPS")
+Rel(parent, pwa, "Opens the case", "HTTPS")
+Rel(pwa, api, "GET cases", "JSON/HTTPS")
+Rel(worker, db, "Enqueues review items on rejection", "EF Core")
+Rel(api, db, "Reads queue, resolves items, resumes case", "EF Core")
+Rel(api, vault, "Reviewer reads, logged with reviewer and purpose", "EF Core, Blob SDK")
+Rel(worker, push, "Notifies the parent")
+@enduml

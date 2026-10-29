@@ -1,0 +1,58 @@
+@startuml
+title UML sequence behaviour — Receive a payment webhook
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+participant "Payment provider" as provider
+box "Backend — Seedlings API application" #D1FADF
+  participant "PaymentWebhooksController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "RecordPaymentEventCommandHandler" as handler
+  participant "Payment" as payment
+  participant "IAuditTrail" as audit
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "PaymentGateway" as gateway
+  database "Seedlings database" as db
+end box
+provider -> controller : POST /api/webhooks/payments (raw body, signature header)
+controller -> gateway : VerifyWebhook(rawBody, headers)
+alt signature invalid or timestamp outside tolerance
+  gateway --> controller : InvalidWebhookSignatureException
+  controller --> provider : 400 ProblemDetails; no state change (L2-030 AC3)
+else signature valid
+  gateway --> controller : VerifiedPaymentEvent
+  controller -> handler : Send RecordPaymentEventCommand
+  handler -> db : Insert PaymentWebhookEvent(ProviderEventId)
+  alt event id already recorded
+    db --> handler : Unique key violation
+    handler --> controller : Already processed; payment recorded once (L2-030 AC4)
+  else first delivery
+    handler -> db : Load Payment by provider reference
+    db --> handler : Payment(Pending)
+    alt CheckoutSucceeded and amount matches
+      handler -> payment : MarkPaid(eventId, OccurredAt)
+      handler -> db : Set RespCase.Plan and PaidAt on each covered case (L2-030 AC1)
+      handler -> audit : Append AuditEntry(Actor = System, Action = PaymentConfirmed)
+    else CheckoutFailed
+      handler -> payment : MarkFailed(eventId, reason); no charge recorded (L2-030 AC2)
+    end
+    handler -> db : Save changes in one unit of work
+    db --> handler : Commit result
+    handler --> controller : Done
+  end
+  controller --> provider : 200 OK
+end
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+title UML sequence behaviour — Camera permission denied
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeDocumentCapturePage" as page
+  participant "CameraCaptureService" as cam
+  participant "CameraPermissionDialog" as dialog
+end box
+participant "Browser" as browser
+actor -> page : Tap Take photo
+page -> cam : open(facingMode = environment)
+cam -> browser : navigator.mediaDevices.getUserMedia(video)
+browser --> cam : NotAllowedError
+cam --> page : Permission state = denied
+page -> dialog : Open CDK dialog
+dialog --> actor : Explain how to allow the camera for this browser and device (L2-015 AC3)
+dialog --> actor : Offer Upload a file
+alt parent taps Upload a file
+  dialog --> page : Close with result "upload"
+  page --> actor : Open the file picker (see upload-file behaviour)
+else parent closes the dialog
+  dialog --> page : Close
+  page --> actor : Keep Upload a file instead visible
+end
+@enduml

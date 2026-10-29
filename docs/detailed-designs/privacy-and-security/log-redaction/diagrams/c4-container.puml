@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Log redaction
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  Container(worker, "Seedlings Worker", ".NET 10 triggered WebJob", "Scheduled daily checks and reminders")
+}
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+System_Ext(logfiles, "App Service log files", "Console and logs/seedling-.log, HTTP logs kept 3 days")
+
+Rel(parent, pwa, "Uses", "HTTPS")
+Rel(pwa, api, "Sends sensitive values in request bodies only", "JSON/HTTPS")
+Rel(api, logfiles, "Writes redacted Serilog events")
+Rel(api, appinsights, "Request and dependency telemetry (codeless agent)")
+Rel(worker, logfiles, "Writes redacted Serilog events")
+@enduml

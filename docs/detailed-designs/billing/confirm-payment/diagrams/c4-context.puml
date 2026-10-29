@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Confirm a payment
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(payments, "Payment provider", "Hosted checkout and signed webhooks; card numbers never reach Seedlings")
+
+Rel(parent, payments, "Pays on the hosted checkout page", "HTTPS")
+Rel(payments, seedlings, "Sends signed payment webhooks", "HTTPS")
+Rel(payments, parent, "Returns the browser to Seedlings", "HTTPS redirect")
+Rel(parent, seedlings, "Sees Paid or the failure reason", "HTTPS")
+@enduml

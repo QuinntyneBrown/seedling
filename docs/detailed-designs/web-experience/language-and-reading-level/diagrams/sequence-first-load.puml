@@ -1,0 +1,45 @@
+@startuml
+title UML sequence behaviour — Resolve the language on first load
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Browser" as browser
+  participant "App initializer" as init
+  participant "I18nStore" as store
+  participant "App (app-root)" as shell
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "Azure Static Web App" as swa
+end box
+actor -> browser : Open Seedlings for the first time
+browser -> init : Bootstrap
+init -> store : resolveInitial(no session)
+store -> store : localStorage sl.language absent
+store -> browser : navigator.languages[0]
+browser --> store : For example fr-CA, en-US or es-ES
+alt Primary subtag fr
+  store -> store : language = Fr (L2-027 criterion 1)
+else Primary subtag en
+  store -> store : language = En
+else Any other language
+  store -> store : language = En (L2-027 criterion 2)
+end
+store -> swa : GET /i18n/fr.json or /i18n/en.json (service worker cache when offline)
+swa --> store : Catalog
+store -> browser : html lang = fr or en; localStorage sl.language
+init --> shell : Resolved; render
+shell --> actor : Every screen in the resolved language
+@enduml

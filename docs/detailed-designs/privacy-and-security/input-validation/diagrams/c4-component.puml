@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Input validation
+
+Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+Container_Boundary(api, "Seedlings API") {
+  Component(limits, "Request size limits", "Kestrel MaxRequestBodySize, FormOptions", "Stops oversized bodies before buffering")
+  Component(exmw, "ExceptionHandlingMiddleware", "ASP.NET Core middleware", "ValidationException to 400 ValidationProblemDetails")
+  Component(ctrl, "Feature controllers", "ASP.NET Core [ApiController]", "Bind requests to MediatR commands")
+  Component(behavior, "ValidationBehavior", "MediatR pipeline behaviour", "Runs every IValidator<TRequest> before the handler")
+  Component(validators, "Feature validators", "FluentValidation AbstractValidator", "SaveSinCommandValidator, SaveIntakeFieldCommandValidator, SaveDocumentCommandValidator")
+  Component(rules, "Shared rules", "Seedling.Application/Common/Validation", "SinRules, PostalCodeRules, UploadRules")
+  Component(sniffer, "FileSignatureInspector", "Domain service", "Detects JPEG, PNG, HEIC, PDF from leading bytes")
+  Component(handler, "Feature handlers", "MediatR handlers", "Run only after validation passes")
+}
+ContainerDb(db, "Seedlings database", "Azure SQL", "Validated data only")
+
+Rel(pwa, limits, "Sends request", "HTTPS")
+Rel(limits, exmw, "Next")
+Rel(exmw, ctrl, "Next")
+Rel(ctrl, behavior, "Sends command through")
+Rel(behavior, validators, "Runs")
+Rel(validators, rules, "Use")
+Rel(rules, sniffer, "Uses for uploads")
+Rel(behavior, handler, "Calls when valid")
+Rel(handler, db, "Persists")
+@enduml

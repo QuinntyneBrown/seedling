@@ -1,0 +1,37 @@
+@startuml
+title UML sequence behaviour — Complete an intake step offline
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "Intake step page" as page
+  participant "QueueingIntakeService" as qintake
+  participant "Connectivity" as conn
+  participant "IndexedDbOutbox" as outbox
+  database "Device store (IndexedDB)" as idb
+  participant "App shell + sl-banner" as shell
+end box
+actor -> page : Complete the step and continue
+page -> qintake : save(caseId, stepKey, fields)
+qintake -> conn : online()
+conn --> qintake : false
+qintake -> outbox : enqueue(IntakeStep, PUT path, body, id = new UUID)
+outbox -> idb : Add item with next seq, state Pending
+idb --> outbox : Stored
+outbox --> qintake : OutboxItem; count + 1
+qintake --> page : { state: queued }
+page --> actor : Step marked "Will send when online" (L2-003 criterion 2)
+shell --> actor : Banner "You're offline. N changes will send when you reconnect."
+@enduml

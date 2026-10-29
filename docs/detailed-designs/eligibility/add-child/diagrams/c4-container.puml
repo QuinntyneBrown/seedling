@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Add a child
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+
+Rel(parent, pwa, "Fills the Your children step", "HTTPS")
+Rel(pwa, idb, "Queues the request when offline")
+Rel(pwa, api, "POST /api/children, GET /api/children", "JSON/HTTPS, bearer")
+Rel(api, db, "Writes Child and RespCase", "EF Core")
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Audit trail
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Hosts the Claude model the case agent calls")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Approves actions and reads the Activity list using")
+Rel(reviewer, seedlings, "Resolves cases; each action audited", "Admin app")
+Rel(seedlings, foundry, "Agent actions decided with")
+Rel(seedlings, provider, "Submissions recorded as audit entries", "HTTPS")
+Rel(seedlings, esdc, "Submissions recorded as audit entries", "HTTPS")
+@enduml

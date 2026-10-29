@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Save a document to the vault
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeDocumentReviewPage" as review
+  participant "HttpDocumentsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DocumentsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveDocumentCommandHandler" as handler
+  participant "IConsentPolicy" as policy
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IImageQualityChecker" as checker
+  participant "ISensitiveDataVault" as vault
+  database "Seedlings database" as db
+end box
+actor -> review : Tap Use this photo
+review -> client : saveDocument(caseId, kind, image, acceptWithIssues)
+client -> controller : POST /api/cases/{caseId}/documents
+controller -> controller : Authenticate and apply case authorization
+controller -> handler : Send SaveDocumentCommand
+handler -> db : Read EligibilityResult.ShownAt
+alt eligibility result not shown
+  handler --> controller : ForbiddenException("eligibility_first") (L2-012 AC2)
+else shown
+  handler -> policy : EnsureGivenAsync(caseId, IdentityDocuments) (L2-010 AC3)
+  policy --> handler : Consent present
+  handler -> checker : CheckAsync(upload, kind) before saving (L2-016)
+  checker --> handler : QualityReport
+  alt report failed and acceptWithIssues is false
+    handler --> controller : BadRequestException("quality_failed") with reasons
+  else report passed, or parent accepted issues
+    handler -> vault : StoreDocumentAsync(caseId, kind, content) encrypted (L2-016 AC3)
+    vault --> handler : VaultItemId
+    handler -> db : Upsert DocumentStepStatus(QualityPassed)
+    db --> handler : Commit result
+    handler --> controller : DocumentStepStatusDto
+  end
+end
+controller --> client : 200 OK or ProblemDetails
+client --> review : Result
+review --> actor : Green check chip when quality passed (L2-016 AC3); next document or next step
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Track a submission
+
+Container_Boundary(worker, "Seedlings Worker") {
+  Component(job, "TrackSubmissionsJob", "Hosted service, cron", "Runs daily; RunOnceThenExit as WebJob")
+  Component(check, "CheckPendingSubmissionsCommandHandler", "MediatR handler", "Polls each unconfirmed submission")
+  Component(confirm, "ConfirmAccountOpenedCommandHandler", "MediatR handler", "Stores account number, Account open")
+  Component(calendar, "BusinessCalendar", "Domain service", "Counts business days")
+  Component(enqueue, "EnqueueForReviewCommandHandler", "MediatR handler", "Queues rejections and overdue follow-ups")
+  Component(gateway, "IProviderGateway", "Port and adapter", "GetApplicationStatusAsync")
+  Component(notify, "INotificationDispatcher", "Application service", "Push, SMS or email per parent choice")
+  Component(audit, "IAuditTrail", "Application service", "Appends audit entries")
+  ComponentDb(db, "Seedlings database", "Azure SQL", "Submission, RespCase, ReviewItem, AuditEntry")
+}
+System_Ext(provider, "RESP provider", "Opens accounts")
+
+Rel(job, check, "Sends CheckPendingSubmissionsCommand")
+Rel(check, gateway, "GetApplicationStatusAsync")
+Rel(gateway, provider, "Status request", "Protocol <TO SUPPLY>")
+Rel(check, confirm, "Sends ConfirmAccountOpenedCommand")
+Rel(check, calendar, "BusinessDaysBetween")
+Rel(check, enqueue, "Sends EnqueueForReviewCommand")
+Rel(check, notify, "Following-up message")
+Rel(confirm, notify, "Account open message")
+Rel(check, audit, "Appends ProviderStatusChecked")
+Rel(confirm, audit, "Appends AccountOpened")
+Rel(check, db, "Reads and writes", "EF Core")
+Rel(confirm, db, "Writes", "EF Core")
+@enduml

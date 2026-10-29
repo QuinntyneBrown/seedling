@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Performance budget
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+System_Ext(foundry, "Microsoft Foundry (Claude)", "Hosts the Claude model the case agent calls; outside the measured request path")
+
+Rel(parent, seedlings, "Loads the dashboard and saves intake answers on a mid-range phone over 4G", "HTTPS")
+Rel(seedlings, appinsights, "Exports request and handler timings", "OpenTelemetry")
+Rel(seedlings, foundry, "Calls after the response, never inside a measured request", "HTTPS")
+@enduml

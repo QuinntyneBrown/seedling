@@ -1,0 +1,129 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Notification channels
+
+enum ContactChannel {
+  Push
+  Sms
+  Email
+}
+
+enum NotificationKind {
+  ApprovalNeeded
+  StatusChanged
+  DepositReceived
+  DepositOverdue
+  ContributionRoom
+  ReviewStarted
+}
+
+enum NotificationStatus {
+  Pending
+  Sent
+  Failed
+}
+
+class ParentAccount {
+  +Guid Id
+  +string? Email
+  +string? Phone
+  +Language Language
+  +ContactChannel ContactChannel
+  +ChooseChannel(channel: ContactChannel): void
+}
+
+class PushSubscription {
+  +Guid Id
+  +Guid ParentAccountId
+  +string Endpoint
+  +string P256dh
+  +string Auth
+  +DateTimeOffset CreatedAt
+  +DateTimeOffset? RevokedAt
+}
+
+class Notification {
+  +Guid Id
+  +Guid ParentAccountId
+  +Guid? CaseId
+  +NotificationKind Kind
+  +ContactChannel RequestedChannel
+  +ContactChannel Channel
+  +string DeepLink
+  +NotificationStatus Status
+  +int Attempts
+  +DateTimeOffset CreatedAt
+  +DateTimeOffset? SentAt
+}
+
+class NotificationChannelPolicy {
+  +Resolve(account: ParentAccount, activePush: bool): ContactChannel
+}
+
+interface INotificationDispatcher {
+  +DispatchAsync(request: NotificationRequest): Task
+}
+class NotificationDispatcher
+class NotificationRequest {
+  +Guid ParentAccountId
+  +Guid? CaseId
+  +NotificationKind Kind
+  +IReadOnlyDictionary<string,string> Values
+}
+
+interface INotificationSender {
+  +Channel: ContactChannel
+  +SendAsync(to: Recipient, message: RenderedMessage): Task<SendResult>
+}
+class WebPushSender
+class SmsSender
+class EmailSender
+class NotificationTemplates {
+  +Render(kind: NotificationKind, language: Language, values, deepLink): RenderedMessage
+}
+
+class CaseStatusChanged {
+  +Guid CaseId
+  +CaseStatus From
+  +CaseStatus To
+}
+class CaseStatusChangedNotificationHandler
+class SetNotificationChannelCommand {
+  +ContactChannel Channel
+}
+class SavePushSubscriptionCommand {
+  +string? Endpoint
+  +string? P256dh
+  +string? Auth
+  +string Permission
+}
+
+ParentAccount --> ContactChannel
+ParentAccount "1" *-- "0..*" PushSubscription
+ParentAccount "1" o-- "0..*" Notification
+Notification --> NotificationKind
+Notification --> NotificationStatus
+INotificationDispatcher <|.. NotificationDispatcher
+NotificationDispatcher ..> NotificationChannelPolicy
+NotificationDispatcher ..> NotificationTemplates
+NotificationDispatcher "1" --> "3" INotificationSender
+INotificationSender <|.. WebPushSender
+INotificationSender <|.. SmsSender
+INotificationSender <|.. EmailSender
+NotificationDispatcher ..> Notification : writes
+NotificationDispatcher ..> NotificationRequest
+CaseStatusChangedNotificationHandler ..> CaseStatusChanged : handles
+CaseStatusChangedNotificationHandler ..> INotificationDispatcher
+SetNotificationChannelCommand --> ContactChannel
+@enduml

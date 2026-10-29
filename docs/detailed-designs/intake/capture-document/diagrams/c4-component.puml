@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Capture a document
+
+Container_Boundary(pwa, "Seedlings PWA") {
+  Component(capture, "IntakeDocumentCapturePage", "Angular page", "Camera view, document chips, Upload a file instead")
+  Component(review, "IntakeDocumentReviewPage", "Angular page", "Preview, quality checklist, Use this photo or Retake")
+  Component(camera, "Camera", "sl-camera design-system component", "Frame guide, shutter, flash, switch camera")
+  Component(camsvc, "CameraCaptureService", "Angular service", "getUserMedia, permission state, still capture")
+  Component(client, "HttpDocumentsService", "Angular service behind DOCUMENTS_SERVICE", "Calls document endpoints")
+}
+Container_Boundary(api, "Seedlings API") {
+  Component(ctrl, "DocumentsController", "ASP.NET Core controller", "/api/cases/{caseId}/documents")
+  Component(check, "CheckDocumentQualityQueryHandler", "MediatR handler", "Runs the quality check; stores nothing")
+  Component(save, "SaveDocumentCommandHandler", "MediatR handler", "Gates, re-checks and stores the document")
+  Component(checker, "IImageQualityChecker", "Application port", "Blur, glare and cropping check (technique <TO SUPPLY>)")
+  Component(vaultport, "ISensitiveDataVault", "Application port", "Encrypted document storage (sensitive-data-vault)")
+}
+Rel(capture, camera, "Hosts")
+Rel(camera, camsvc, "Opens stream and captures")
+Rel(capture, client, "checkQuality(image)")
+Rel(review, client, "saveDocument(image)")
+Rel(client, ctrl, "multipart/HTTPS")
+Rel(ctrl, check, "Sends CheckDocumentQualityQuery")
+Rel(ctrl, save, "Sends SaveDocumentCommand")
+Rel(check, checker, "Check(image)")
+Rel(save, checker, "Check(image)")
+Rel(save, vaultport, "StoreDocumentAsync")
+@enduml

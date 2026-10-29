@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Offline status and queue
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+
+Rel(parent, seedlings, "Views last known status and completes steps, online or offline")
+Rel(seedlings, provider, "Receives queued intake and documents later through the case agent's flows", "HTTPS")
+@enduml

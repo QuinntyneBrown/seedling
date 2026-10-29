@@ -1,0 +1,125 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Offline status and queue
+
+interface CasesService {
+  +list(): Observable<CaseListResult>
+}
+interface IntakeService {
+  +save(caseId: string, stepKey: string, fields: IntakeFieldInput[]): Observable<SaveResult>
+}
+interface DocumentsService {
+  +upload(caseId: string, file: Blob, meta: DocumentMeta): Observable<SaveResult>
+}
+interface DeviceStore {
+  +readSnapshot(parentAccountId: string): Promise<CaseSnapshot | null>
+  +writeSnapshot(snapshot: CaseSnapshot): Promise<void>
+  +deleteAll(): Promise<void>
+}
+interface Outbox {
+  +count: Signal<number>
+  +enqueue(item: NewOutboxItem): Promise<OutboxItem>
+  +pending(): Promise<OutboxItem[]>
+  +failed(): Promise<OutboxItem[]>
+  +markFailed(id: string, reason: string): Promise<void>
+  +retry(id: string): Promise<void>
+  +remove(id: string): Promise<void>
+}
+
+class CachingCasesService
+class HttpCasesService
+class QueueingIntakeService
+class HttpIntakeService
+class QueueingDocumentsService
+class HttpDocumentsService
+class IndexedDbDeviceStore
+class IndexedDbOutbox
+
+class Connectivity <<injectable>> {
+  +online: Signal<boolean>
+  -confirmReachable(): Promise<boolean>
+}
+
+class OutboxReplayer <<injectable>> {
+  -running: boolean
+  +run(): Promise<ReplayReport>
+}
+
+class DeviceDataPurger <<injectable>> {
+  +purge(): Promise<void>
+}
+
+class CaseSnapshot {
+  +parentAccountId: string
+  +cases: CaseSummary[]
+  +fetchedAt: Date
+}
+
+class CaseListResult {
+  +cases: CaseSummary[]
+  +source: "device" | "network"
+  +lastUpdatedAt: Date
+}
+
+class OutboxItem {
+  +seq: number
+  +id: string
+  +parentAccountId: string
+  +kind: OutboxKind
+  +method: string
+  +path: string
+  +body: unknown | Blob
+  +createdAt: Date
+  +state: OutboxState
+  +attempts: number
+  +lastError?: string
+}
+
+enum OutboxKind {
+  IntakeStep
+  DocumentUpload
+}
+enum OutboxState {
+  Pending
+  Sending
+  Failed
+}
+
+CasesService <|.. CachingCasesService
+CasesService <|.. HttpCasesService
+IntakeService <|.. QueueingIntakeService
+IntakeService <|.. HttpIntakeService
+DocumentsService <|.. QueueingDocumentsService
+DocumentsService <|.. HttpDocumentsService
+DeviceStore <|.. IndexedDbDeviceStore
+Outbox <|.. IndexedDbOutbox
+
+CachingCasesService --> HttpCasesService : decorates
+CachingCasesService --> DeviceStore : snapshots
+CachingCasesService ..> CaseListResult : emits
+QueueingIntakeService --> HttpIntakeService : decorates
+QueueingIntakeService --> Outbox : enqueues
+QueueingDocumentsService --> HttpDocumentsService : decorates
+QueueingDocumentsService --> Outbox : enqueues
+QueueingIntakeService ..> Connectivity
+QueueingDocumentsService ..> Connectivity
+OutboxReplayer --> Outbox : drains
+OutboxReplayer ..> Connectivity : triggered by
+OutboxReplayer ..> CasesService : refreshes
+DeviceDataPurger --> DeviceStore : deleteAll
+DeviceStore "1" *-- "0..*" CaseSnapshot
+Outbox "1" *-- "0..*" OutboxItem
+OutboxItem --> OutboxKind
+OutboxItem --> OutboxState
+@enduml

@@ -1,0 +1,49 @@
+@startuml
+title UML sequence behaviour — View the Activity list
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CasePage" as page
+  participant "sl-activity-list" as list
+  participant "HttpAuditService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "ActivityController" as ctrl
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetCaseActivityQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Open a case
+page -> client : getActivity(caseId)
+client -> ctrl : GET /api/cases/{caseId}/activity
+ctrl -> handler : Send GetCaseActivityQuery
+handler -> db : Load case where ParentAccountId = current parent
+alt Case belongs to another parent
+  handler --> ctrl : NotFoundException
+  ctrl --> client : 404 ProblemDetails
+else Owner
+  handler -> db : Select AuditEntry by CaseId ORDER BY At DESC (L2-035 AC1)
+  db --> handler : Entries
+  handler --> ctrl : ActivityItemDto list
+  ctrl --> client : 200
+  client --> page : Activity items
+  page -> list : items()
+  list --> actor : Dated list, newest first, with data sent and recipient
+end
+@enduml

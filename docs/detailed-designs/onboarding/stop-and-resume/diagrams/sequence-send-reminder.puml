@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Send one wizard reminder
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Backend — Seedlings Worker" #D1FADF
+  participant "WizardReminderJob" as job
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SendWizardRemindersCommandHandler" as handler
+  participant "WizardProgress" as entity
+  participant "WizardTimeEstimator" as est
+  participant "INotificationDispatcher" as dispatcher
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "Push, SMS or email service" as channel
+end box
+actor "Parent" as actor
+job -> handler : Send SendWizardRemindersCommand (scheduled run)
+handler -> db : Rows with ReminderSentAt null and LastActiveAt <= now - 24 h
+db --> handler : Due WizardProgress rows
+loop Each due row
+  handler -> handler : Build plan; skip unless the journey is open
+  handler -> entity : MarkReminderSent(now)
+  handler -> db : Save claim (RowVersion checked)
+  alt Conflict (parent returned or another run claimed)
+    db --> handler : DbUpdateConcurrencyException
+    handler -> handler : Skip row
+  else Claimed
+    db --> handler : Committed
+    handler -> est : Estimate(plan, progress)
+    est --> handler : RemainingMinutes
+    handler -> dispatcher : L2-040 SendAsync(WizardReminder, chosen channel, minutes, /wizard/{step}, idempotency key)
+    dispatcher -> channel : Deliver "About N minutes left to finish"
+    alt Delivered
+      channel --> dispatcher : Accepted
+      dispatcher --> handler : Sent
+      channel -> actor : One reminder with the time left
+    else Delivery failed
+      channel --> dispatcher : Error
+      dispatcher --> handler : Failed
+      handler -> entity : ClearReminder()
+      handler -> db : Save; next run retries with the same idempotency key
+    end
+  end
+end
+handler --> job : Count of reminders sent
+@enduml

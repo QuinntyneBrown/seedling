@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Input validation
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+Person(reviewer, "Human reviewer", "Resolves cases the agent cannot complete")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(payments, "Payment provider", "Hosted checkout and signed webhooks; card numbers never reach Seedlings")
+
+Rel(parent, seedlings, "Submits answers, SINs, addresses and documents to")
+Rel(reviewer, seedlings, "Submits review notes to")
+Rel(payments, seedlings, "Posts signed webhooks to", "HTTPS")
+@enduml

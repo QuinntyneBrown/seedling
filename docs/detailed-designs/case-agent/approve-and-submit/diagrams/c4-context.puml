@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Approve and submit
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(provider, "RESP provider", "No-fee RESP promoter that opens accounts and reports deposits")
+System_Ext(esdc, "ESDC", "Employment and Social Development Canada; receives CLB/CESG claims (form SDE 0093)")
+
+Rel(parent, seedlings, "Approves or declines what is sent", "HTTPS")
+Rel(seedlings, provider, "Submits the RESP application and SDE 0093 after approval", "Protocol <TO SUPPLY>")
+Rel(provider, esdc, "Forwards SDE 0093 grant application", "Channel <TO SUPPLY>")
+@enduml
