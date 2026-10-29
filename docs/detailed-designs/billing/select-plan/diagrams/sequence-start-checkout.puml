@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Start a hosted checkout
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "CheckoutPage" as page
+  participant "HttpBillingService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "BillingController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "StartCheckoutCommandHandler" as handler
+  participant "PlanCatalog" as catalog
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "PaymentGateway" as gateway
+end box
+participant "Payment provider" as provider
+actor -> page : Review order summary (plan, children covered, tax, total)
+actor -> page : Tap Pay
+page -> client : startCheckout(caseId, LaunchFee)
+client -> controller : POST /api/cases/{caseId}/checkout
+controller -> handler : Send StartCheckoutCommand
+handler -> catalog : Amount and Tax(LaunchFee, province)
+catalog --> handler : 3900 + tax
+handler -> db : Find open Pending Payment for case and plan
+alt one exists
+  handler -> handler : Reuse it (idempotent retry)
+else none
+  handler -> db : Insert Payment(Status = Pending)
+end
+handler -> gateway : CreateCheckoutSessionAsync(amount, tax, paymentId, return URLs)
+gateway -> provider : Create hosted checkout session
+provider --> gateway : Session id and hosted URL
+gateway --> handler : CheckoutSession
+handler -> db : Save CheckoutSessionId
+handler --> controller : CheckoutSessionDto(hostedCheckoutUrl)
+controller --> client : 200 OK
+client --> page : Hosted URL
+page -> provider : Navigate the parent to the hosted page
+note right of provider : Card number, expiry and security code are entered only here; Seedlings never receives them (L2-029 AC2)
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Select a plan
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+}
+System_Ext(payments, "Payment provider", "Hosted checkout; provider <TO SUPPLY>")
+Rel(parent, pwa, "Opens the plan screen", "HTTPS")
+Rel(pwa, api, "GET plans, POST plan, POST checkout", "JSON/HTTPS")
+Rel(api, db, "Reads Provider; writes RespCase.Plan and Payment", "EF Core")
+Rel(api, payments, "Creates checkout session", "HTTPS")
+Rel(pwa, payments, "Redirects the parent to the hosted page", "HTTPS")
+@enduml

@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Take a photo and check its quality
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeDocumentCapturePage" as page
+  participant "CameraCaptureService" as cam
+  participant "IntakeDocumentReviewPage" as review
+  participant "HttpDocumentsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DocumentsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "CheckDocumentQualityQueryHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  participant "IImageQualityChecker" as checker
+end box
+actor -> page : Open the document step
+page -> cam : open(facingMode = environment)
+cam --> page : Live stream
+page --> actor : Camera with frame guide "Fit the whole page inside the frame" (L2-015 AC1)
+actor -> page : Tap Take photo
+page -> cam : captureStill()
+cam --> page : Image blob
+page -> review : Navigate with the captured image held in memory
+review --> actor : Preview the image before saving (L2-015 AC1)
+review -> client : checkQuality(caseId, kind, image)
+client -> controller : POST /api/cases/{caseId}/documents/quality-checks
+controller -> handler : Send CheckDocumentQualityQuery
+handler -> checker : CheckAsync(upload, kind)
+checker --> handler : QualityReport(blur, glare, cropping)
+handler --> controller : QualityReport (nothing stored)
+controller --> client : 200 OK
+client --> review : Report
+alt a check fails
+  review --> actor : Show failed check with reason, e.g. "Glare in the top right corner"; Retake is the primary action (L2-016 AC1, AC2)
+else all checks pass
+  review --> actor : Show passed checklist; Use this photo is enabled
+end
+@enduml

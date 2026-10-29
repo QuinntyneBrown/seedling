@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Complete intake steps
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System(seedlings, "Seedlings", "RESP opening and grant-claiming agent with a PWA front end")
+System_Ext(addresslookup, "Address lookup service", "Returns addresses for a postal code (provider <TO SUPPLY>)")
+System_Ext(appinsights, "Application Insights", "Telemetry and logs")
+
+Rel(parent, seedlings, "Answers the intake steps on any device", "HTTPS")
+Rel(seedlings, addresslookup, "Looks up addresses by postal code", "HTTPS")
+Rel(seedlings, appinsights, "Writes redacted telemetry", "HTTPS")
+@enduml

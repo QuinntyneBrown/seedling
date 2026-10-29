@@ -1,0 +1,41 @@
+@startuml
+title UML sequence behaviour — Reject sensitive data sent without consent
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+participant "Any API client" as actor
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as controller
+  participant "ExceptionHandlingMiddleware" as mw
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveSinCommandHandler" as handler
+  participant "ConsentPolicy" as policy
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  database "Sensitive data vault" as vault
+end box
+actor -> controller : PUT /api/cases/{caseId}/sin
+controller -> controller : Authenticate and apply case authorization
+controller -> handler : Send SaveSinCommand
+handler -> policy : EnsureGivenAsync(caseId, Sin)
+policy -> db : Read ConsentRecord(caseId, Sin)
+db --> policy : No record
+policy --> handler : Throw ConsentNotGivenException (L2-010 AC3)
+handler --> controller : Exception propagates before any vault call
+controller --> mw : Exception
+mw --> actor : 403 ProblemDetails, code "consent_required"
+note over vault : No write occurs; nothing is stored (L2-010 AC3)
+@enduml

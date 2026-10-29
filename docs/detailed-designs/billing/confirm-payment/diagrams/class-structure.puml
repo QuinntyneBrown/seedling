@@ -1,0 +1,106 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Confirm a payment
+
+enum PaymentStatus {
+  Pending
+  Paid
+  Failed
+}
+
+enum PaymentEventKind {
+  CheckoutSucceeded
+  CheckoutFailed
+  Other
+}
+
+class Payment {
+  +Guid Id
+  +Guid CaseId
+  +Guid ParentAccountId
+  +PlanKind Plan
+  +long AmountCents
+  +long TaxCents
+  +string CheckoutSessionId
+  +string? ProviderEventId
+  +PaymentStatus Status
+  +string? FailureReason
+  +DateTimeOffset? PaidAt
+  +MarkPaid(eventId: string, at: DateTimeOffset): void
+  +MarkFailed(eventId: string, reason: string): void
+}
+
+class PaymentWebhookEvent {
+  +string ProviderEventId <<PK>>
+  +PaymentEventKind Kind
+  +DateTimeOffset ReceivedAt
+}
+
+class RespCase {
+  +Guid Id
+  +PlanKind? Plan
+  +DateTimeOffset? PaidAt
+  +ApplyPaidPlan(plan: PlanKind, at: DateTimeOffset): void
+}
+
+class VerifiedPaymentEvent {
+  +string ProviderEventId
+  +PaymentEventKind Kind
+  +string ProviderReference
+  +long AmountCents
+  +string? FailureReason
+  +DateTimeOffset OccurredAt
+}
+
+interface IPaymentGateway {
+  +VerifyWebhook(rawBody: byte[], headers: IHeaderDictionary): VerifiedPaymentEvent
+}
+
+class InvalidWebhookSignatureException
+
+class RecordPaymentEventCommand {
+  +VerifiedPaymentEvent Event
+}
+
+class RecordPaymentEventCommandHandler {
+  +Handle(command: RecordPaymentEventCommand): Task
+}
+
+class GetPaymentStatusQueryHandler {
+  +Handle(query: GetPaymentStatusQuery): Task<PaymentStatusDto>
+}
+
+class PaymentStatusDto {
+  +Guid PaymentId
+  +PaymentStatus Status
+  +string? FailureReason
+  +DateTimeOffset? PaidAt
+}
+
+interface IAuditTrail
+
+Payment --> PaymentStatus
+PaymentWebhookEvent --> PaymentEventKind
+IPaymentGateway ..> VerifiedPaymentEvent : returns
+IPaymentGateway ..> InvalidWebhookSignatureException : throws
+RecordPaymentEventCommand *-- VerifiedPaymentEvent
+RecordPaymentEventCommandHandler ..> RecordPaymentEventCommand : handles
+RecordPaymentEventCommandHandler ..> PaymentWebhookEvent : inserts once
+RecordPaymentEventCommandHandler --> Payment : marks Paid or Failed
+RecordPaymentEventCommandHandler --> RespCase : applies paid plan
+RecordPaymentEventCommandHandler --> IAuditTrail
+GetPaymentStatusQueryHandler --> Payment : reads
+GetPaymentStatusQueryHandler ..> PaymentStatusDto : returns
+RespCase "1" --> "*" Payment
+@enduml

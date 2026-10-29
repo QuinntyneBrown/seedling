@@ -1,0 +1,54 @@
+@startuml
+title UML sequence behaviour — Autosave an intake field
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeParentAddressPage" as page
+  participant "AutosaveField" as autosave
+  participant "IntakeFlowStore" as store
+  participant "HttpIntakeService" as client
+  database "Device store" as idb
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveIntakeFieldCommandHandler" as handler
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Choose an address or type a unit
+page -> autosave : change event (text inputs: pause of <TO SUPPLY> ms)
+autosave -> store : saveField(stepKey, fieldKey, value)
+store --> page : Show "Saving"
+alt online
+  store -> client : saveField(...)
+  client -> controller : PUT /api/intake/fields/{stepKey}/{fieldKey}
+  controller -> controller : Authenticate and apply case authorization when caseId is set
+  controller -> handler : Send SaveIntakeFieldCommand (validated per L2-046)
+  handler -> db : Upsert IntakeField(SavedAt = UtcNow) (L2-013)
+  db --> handler : Commit result
+  handler --> controller : SavedFieldDto(SavedAt)
+  controller --> client : 200 OK
+  client --> store : Saved
+  store --> page : Show "Saved" within 1 second (L2-013 AC2)
+else offline
+  store -> idb : Queue field save (offline-status-and-queue)
+  store --> page : Show "Saved on this device"
+  idb --> store : Replay queue when connectivity returns
+end
+@enduml

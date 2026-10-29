@@ -1,0 +1,60 @@
+@startuml
+title UML sequence behaviour — Show the plan screen
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "PlanPage" as page
+  participant "HttpBillingService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "BillingController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetPlanOptionsQueryHandler" as handler
+  participant "PlanCatalog" as catalog
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> page : Continue from "Check the forms"
+page -> client : getPlans(caseId)
+client -> controller : GET /api/cases/{caseId}/plans
+controller -> controller : Authenticate and apply case authorization
+controller -> handler : Send GetPlanOptionsQuery
+handler -> db : Load RespCase and its selected Provider
+db --> handler : Case, Provider.FundsFreeTier
+handler -> catalog : Prices()
+catalog --> handler : Free 0, LaunchFee 3900 once, AnnualCare 2400 a year (cents)
+alt provider funds the free tier
+  handler -> handler : Order Free first at $0 (L2-029 AC1)
+else free tier not available
+  handler -> handler : Omit Free
+end
+handler --> controller : PlanOptionDto list
+controller --> client : 200 OK
+client --> page : Plans
+page --> actor : Plan cards; selected plan named on Continue
+alt parent chooses Free
+  actor -> page : Continue with Free
+  page -> client : choosePlan(caseId, Free)
+  client -> controller : PUT /api/cases/{caseId}/plan
+  controller -> controller : Send ChooseFreePlanCommand; set RespCase.Plan = Free
+  controller --> client : 204 No Content
+  page --> actor : Go to Approve and send
+else parent chooses One-time or Annual
+  page --> actor : Go to CheckoutPage (see start-checkout behaviour)
+end
+@enduml

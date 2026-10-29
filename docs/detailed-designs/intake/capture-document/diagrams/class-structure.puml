@@ -1,0 +1,100 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Capture a document
+
+enum DocumentKind {
+  PhotoId
+  ProofOfAddress
+  BirthCertificate
+}
+
+enum QualityIssue {
+  Blurred
+  Glare
+  Cropped
+}
+
+class QualityReport {
+  +bool Passed
+  +IReadOnlyList<QualityCheckResult> Checks
+}
+
+class QualityCheckResult {
+  +QualityIssue Issue
+  +bool Passed
+  +string ReasonKey
+}
+
+class DocumentUpload {
+  +Stream Content
+  +string ContentType
+  +long Length
+  +string FileName
+}
+
+class CheckDocumentQualityQuery {
+  +Guid CaseId
+  +DocumentKind Kind
+  +DocumentUpload Upload
+}
+
+class SaveDocumentCommand {
+  +Guid CaseId
+  +DocumentKind Kind
+  +DocumentUpload Upload
+  +bool AcceptWithIssues
+}
+
+class DocumentStepStatus {
+  +Guid CaseId
+  +DocumentKind Kind
+  +Guid VaultItemId
+  +bool QualityPassed
+  +DateTimeOffset SavedAt
+}
+
+class CheckDocumentQualityQueryHandler {
+  +Handle(query): Task<QualityReport>
+}
+
+class SaveDocumentCommandHandler {
+  +Handle(command): Task<DocumentStepStatusDto>
+}
+
+interface IImageQualityChecker {
+  +CheckAsync(upload: DocumentUpload, kind: DocumentKind): Task<QualityReport>
+}
+
+interface ISensitiveDataVault {
+  +StoreDocumentAsync(caseId: Guid, kind: DocumentKind, content: Stream, contentType: string): Task<Guid>
+}
+
+interface IConsentPolicy {
+  +EnsureGivenAsync(caseId: Guid, category: ConsentCategory): Task
+}
+
+QualityReport "1" *-- "3" QualityCheckResult
+QualityCheckResult --> QualityIssue
+CheckDocumentQualityQuery *-- DocumentUpload
+SaveDocumentCommand *-- DocumentUpload
+CheckDocumentQualityQuery --> DocumentKind
+CheckDocumentQualityQueryHandler ..> CheckDocumentQualityQuery : handles
+CheckDocumentQualityQueryHandler --> IImageQualityChecker : uses
+SaveDocumentCommandHandler ..> SaveDocumentCommand : handles
+SaveDocumentCommandHandler --> IConsentPolicy : IdentityDocuments
+SaveDocumentCommandHandler --> IImageQualityChecker : re-checks
+SaveDocumentCommandHandler --> ISensitiveDataVault : stores
+SaveDocumentCommandHandler ..> DocumentStepStatus : writes
+IImageQualityChecker ..> QualityReport : returns
+@enduml

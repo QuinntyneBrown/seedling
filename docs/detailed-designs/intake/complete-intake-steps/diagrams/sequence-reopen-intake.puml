@@ -1,0 +1,47 @@
+@startuml
+title UML sequence behaviour — Reopen the intake on any device
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeFlowStore" as store
+  participant "HttpIntakeService" as client
+  database "Device store" as idb
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "GetIntakeQueryHandler" as handler
+  participant "IntakeStepPlanner" as planner
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+end box
+actor -> store : Reopen the app after closing it
+store -> idb : Replay queued field saves, if any
+idb --> store : Queue drained
+store -> client : getIntake()
+client -> controller : GET /api/intake
+controller -> handler : Send GetIntakeQuery
+handler -> db : Load IntakeField rows, WizardProgress, EligibilityAnswers
+db --> handler : State
+handler -> planner : Plan(answers)
+planner --> handler : Applicable ordered steps
+handler --> controller : IntakeDto(steps, current step, n of total, fields, SIN last 3 digits)
+controller --> client : 200 OK
+client --> store : Intake state
+store --> actor : Open the current step with the saved address present (L2-013 AC1)
+@enduml

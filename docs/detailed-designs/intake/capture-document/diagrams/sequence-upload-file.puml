@@ -1,0 +1,42 @@
+@startuml
+title UML sequence behaviour — Upload a file instead of taking a photo
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeDocumentCapturePage" as page
+  participant "IntakeDocumentReviewPage" as review
+  participant "HttpDocumentsService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "DocumentsController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "CheckDocumentQualityQueryHandler" as handler
+end box
+actor -> page : Tap Upload a file instead
+page --> actor : Open file picker, accept JPEG, PNG, HEIC, PDF (L2-015 AC2)
+actor -> page : Choose a file
+page -> page : Reject other types and files over <TO SUPPLY> MB with a plain-language message
+page -> review : Navigate with the chosen file
+review -> client : checkQuality(caseId, kind, file)
+client -> controller : POST /api/cases/{caseId}/documents/quality-checks
+controller -> controller : Check content type by signature, not extension (L2-046)
+controller -> handler : Send CheckDocumentQualityQuery
+handler --> controller : QualityReport
+controller --> client : 200 OK
+client --> review : Report
+review --> actor : Preview and checklist as for a photo
+@enduml

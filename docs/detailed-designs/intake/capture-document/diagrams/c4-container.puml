@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Capture a document
+
+Person(parent, "Parent", "Opens and tracks an RESP for each child")
+System_Boundary(seedlings, "Seedlings") {
+  Container(pwa, "Seedlings PWA", "Angular 21, service worker", "Parent-facing progressive web app (frontend/projects/seedling)")
+  ContainerDb(idb, "Device store", "IndexedDB", "Last known status and offline queue")
+  Container(api, "Seedlings API", "ASP.NET Core, .NET 10", "Controllers, MediatR application layer, domain")
+  ContainerDb(db, "Seedlings database", "Azure SQL", "Accounts, cases, intake, audit trail")
+  ContainerDb(vault, "Sensitive data vault", "Azure SQL (segregated schema) + Blob Storage, encrypted", "SINs and identity documents, access-logged")
+}
+Rel(parent, pwa, "Takes a photo or chooses a file", "Camera / file picker")
+Rel(pwa, idb, "Queues an upload while offline")
+Rel(pwa, api, "POST quality check, POST document", "multipart/HTTPS")
+Rel(api, db, "Reads consent and eligibility gates; writes step status", "EF Core")
+Rel(api, vault, "Stores the encrypted image", "via ISensitiveDataVault")
+@enduml

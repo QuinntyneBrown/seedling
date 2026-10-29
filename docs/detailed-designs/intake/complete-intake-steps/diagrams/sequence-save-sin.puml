@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Save a child or parent SIN
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Parent" as actor
+box "Frontend — Seedlings PWA" #E0F2FE
+  participant "IntakeChildSinPage" as page
+  participant "HttpIntakeService" as client
+end box
+box "Backend — Seedlings API application" #D1FADF
+  participant "IntakeController" as controller
+end box
+box "Backend — Seedlings Application and Domain" #ECFDF3
+  participant "SaveSinCommandHandler" as handler
+  participant "IConsentPolicy" as policy
+end box
+box "Backend — Seedlings Infrastructure" #FFF4E5
+  database "Seedlings database" as db
+  participant "ISensitiveDataVault" as vault
+end box
+actor -> page : Type nine digits (masked) and tap Save and continue
+page -> client : saveSin(caseId, Child, sin)
+client -> controller : PUT /api/cases/{caseId}/sin
+controller -> controller : Authenticate and apply case authorization
+controller -> handler : Send SaveSinCommand (format checked per L2-046)
+handler -> db : Read EligibilityResult.ShownAt for the case
+alt eligibility result not yet shown
+  handler --> controller : ForbiddenException("eligibility_first") (L2-012 AC2)
+  controller --> client : 403 ProblemDetails; nothing stored
+else result shown
+  handler -> policy : EnsureGivenAsync(caseId, Sin) (L2-010 AC3)
+  policy --> handler : Consent present
+  handler -> vault : StoreSinAsync(caseId, Child, sin)
+  vault --> handler : Last 3 digits
+  handler --> controller : SinSummaryDto(lastThree)
+  controller --> client : 200 OK
+  client --> page : Saved; field shows only the last 3 digits
+  page -> page : Advance as in the advance-step behaviour
+end
+@enduml
