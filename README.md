@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/assets/seedling-mark.svg" alt="Seedling logo" width="96" height="96">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/seedlings-mark-dark.svg">
+    <img src="docs/assets/brand/seedlings-mark-light.svg" alt="Seedlings logo" width="128" height="128">
+  </picture>
 </p>
 
 <h1 align="center">Seedling</h1>
