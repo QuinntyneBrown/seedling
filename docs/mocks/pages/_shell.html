@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- @shell:head -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shell — Seedling</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<link rel="stylesheet" href="../styles/app.css">
+<!-- @/shell:head -->
+</head>
+<body data-page="_shell" data-shell="app">
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- @shell:topbar -->
+<header class="topbar">
+  <div class="container topbar__inner">
+    <a class="topbar__brand" href="./_shell.html"><span class="brand-mark" aria-hidden="true"></span>Seedling</a>
+    <nav class="topbar__nav" aria-label="Primary">
+      <a class="topbar__link" data-nav="home" href="./_shell.html" aria-current="page">Home</a>
+    </nav>
+  </div>
+</header>
+<!-- @/shell:topbar -->
+<main class="app-main container" id="main">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-header__title">Shell</h1>
+      <p class="page-header__subtitle">The canonical skeleton every page copies. Edit the title, the two body data attributes, and which nav link is current.</p>
+    </div>
+  </header>
+  <div class="shell-demo">
+    <button class="btn btn--primary" type="button">Primary</button>
+    <button class="btn btn--quiet" type="button">Quiet</button>
+  </div>
+</main>
+<!-- @shell:bottomnav -->
+<nav class="bottom-nav" aria-label="Primary">
+  <a class="bottom-nav__item" data-nav="home" href="./_shell.html" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true"></span>Home</a>
+</nav>
+<!-- @/shell:bottomnav -->
+<script src="../app.js"></script>
+</body>
+</html>

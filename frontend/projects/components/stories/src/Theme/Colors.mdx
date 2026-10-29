@@ -1,0 +1,32 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import { brandSeedling, seedlingLightTheme } from '../../../src/lib/tokens';
+
+<Meta title="Theme/Colors" />
+
+# Colors
+
+Alias colour tokens, painted with the live custom properties the app loads. Each is named for its role.
+
+## Brand ramp
+
+<div className="sb-unstyled" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+  {Object.entries(brandSeedling).map(([step, value]) => (
+    <div key={step} style={{ textAlign: 'center', fontSize: 12 }}>
+      <div style={{ width: 56, height: 40, background: value, borderRadius: 6 }} />
+      {step}
+    </div>
+  ))}
+</div>
+
+## Alias tokens
+
+<div className="sb-unstyled">
+  {Object.keys(seedlingLightTheme)
+    .filter((key) => key.startsWith('color'))
+    .map((key) => (
+      <div className="sl-swatch" key={key}>
+        <span className="sl-swatch__chip" style={{ background: `var(--${key})` }} />
+        <code>{key}</code>
+      </div>
+    ))}
+</div>

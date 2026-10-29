@@ -1,0 +1,58 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Concepts/Developer/Styling Components" />
+
+# Styling components
+
+## Tokens by role
+
+Every colour, size, radius and duration in a component stylesheet is a custom property from the theme, chosen by
+**role**: `--colorBrandForeground1` for brand text, `--colorBrandBackground` for a brand fill, `--colorBrandStroke1` for
+a brand border, even where two roles share a value today. Never a hex value: if a colour is missing, add an alias token
+to the theme in `src/lib/tokens/` and run `npm run tokens`.
+
+```scss
+.btn--primary {
+  background: var(--colorBrandBackground);
+  color: var(--colorNeutralForegroundOnBrand);
+  border-radius: var(--borderRadiusMedium);
+  transition: background var(--durationFast) var(--curveEasyEase);
+
+  &:hover {
+    background: var(--colorBrandBackgroundHover);
+  }
+}
+```
+
+## Component knobs
+
+A value a consumer may tune is a component-scoped custom property with the `--sl-` prefix, declared on the host with a
+token as its default:
+
+```scss
+:host {
+  --sl-btn-h: var(--layoutControlHeight);
+}
+```
+
+## Breakpoints
+
+Use the `respond-to()` mixin from `_breakpoints.scss`; never repeat a pixel width:
+
+```scss
+@use 'breakpoints' as *;
+
+.card {
+  padding: var(--spacingVerticalM) var(--spacingHorizontalM);
+
+  @include respond-to(tablet) {
+    padding: var(--spacingVerticalL) var(--spacingHorizontalL);
+  }
+}
+```
+
+## Encapsulation
+
+Component styles stay encapsulated in the component's own `.scss`. Global styles are limited to the reset, base
+typography, the shell frame and the `sl-` utilities in `styles/_global.scss`. The host element carries the mock's
+block class (`.btn`, `.card`) so the e2e locators and the visual baselines hold.

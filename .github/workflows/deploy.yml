@@ -1,0 +1,481 @@
+name: Deploy to Azure
+
+# Every push to main: test gates → infrastructure (Bicep, idempotent) → API +
+# WebJobs → EF migrations → the Static Web Apps.
+#
+# Azure access is OpenID Connect (azure/login with a federated credential), so
+# the only long-lived secrets are the ones the app itself needs. Static Web App
+# deployment tokens are read from Azure at run time, never stored in GitHub.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_RESOURCE_GROUP: seedling-rg
+  AZURE_LOCATION: canadacentral
+  INFRA_DEPLOYMENT_NAME: seedling-infra
+  DOTNET_VERSION: '10.0.101'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  NODE_VERSION: '22'
+  API_PROJECT: backend/src/Seedling.Api/Seedling.Api.csproj
+  CLI_PROJECT: backend/src/Seedling.Cli/Seedling.Cli.csproj
+  WEBJOBS_SOURCE: backend/deploy/webjobs
+  ANGULAR_DIST: frontend/dist/seedling/browser
+  ADMIN_DIST: frontend/dist/admin/browser
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Nothing reaches Azure unless the backend and frontend suites are green.
+  test-backend:
+    name: Backend tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/Directory.Packages.props', 'backend/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build and test
+        shell: pwsh
+        run: ./eng/Test-Backend.ps1 -Configuration Release
+
+  test-frontend:
+    name: Frontend build and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Angular workspace deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build libraries
+        working-directory: frontend
+        run: |
+          npx ng build api
+          npx ng build components
+
+      - name: Unit tests (Vitest)
+        working-directory: frontend
+        run: npm test -- --watch=false
+
+      - name: ng build (production)
+        working-directory: frontend
+        run: npx ng build seedling --configuration production
+
+      - name: Upload Angular bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: ${{ env.ANGULAR_DIST }}
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: ng build admin (production)
+        working-directory: frontend
+        run: npx ng build admin --configuration production
+
+      - name: Upload admin bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dist
+          path: ${{ env.ADMIN_DIST }}
+          if-no-files-found: error
+          retention-days: 1
+
+  # Converges the resource group on eng/infra/main.bicep: plan, API, SQL, the
+  # three Static Web Apps, Claude on Foundry, monitoring and the budget.
+  # Creating what is missing and leaving the rest alone, so a torn-down stack
+  # comes back on the next push instead of being skipped.
+  infra:
+    name: Provision Azure (Bicep)
+    runs-on: ubuntu-24.04
+    needs: [test-backend, test-frontend]
+    outputs:
+      api_name: ${{ steps.deploy.outputs.api_name }}
+      api_origin: ${{ steps.deploy.outputs.api_origin }}
+      web_swa: ${{ steps.deploy.outputs.web_swa }}
+      web_host: ${{ steps.deploy.outputs.web_host }}
+      admin_swa: ${{ steps.deploy.outputs.admin_swa }}
+      admin_host: ${{ steps.deploy.outputs.admin_host }}
+      design_swa: ${{ steps.deploy.outputs.design_swa }}
+      sql_fqdn: ${{ steps.deploy.outputs.sql_fqdn }}
+      sql_db: ${{ steps.deploy.outputs.sql_db }}
+      foundry_url: ${{ steps.deploy.outputs.foundry_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure resource group
+        run: |
+          az group create \
+            --name "$AZURE_RESOURCE_GROUP" \
+            --location "$AZURE_LOCATION" \
+            --tags app=seedling managedBy=bicep \
+            --output none
+
+      - name: Deploy eng/infra/main.bicep
+        id: deploy
+        env:
+          # main.bicepparam reads these with readEnvironmentVariable().
+          AZURE_RESOURCE_SUFFIX: ${{ vars.AZURE_RESOURCE_SUFFIX || 'dev' }}
+          SQL_ADMIN_LOGIN: ${{ secrets.SQL_ADMIN_LOGIN }}
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          SEEDLING_JWT_SIGNING_KEY: ${{ secrets.SEEDLING_JWT_SIGNING_KEY }}
+          FOUNDRY_ORGANIZATION_NAME: ${{ vars.FOUNDRY_ORGANIZATION_NAME }}
+          FOUNDRY_COUNTRY_CODE: ${{ vars.FOUNDRY_COUNTRY_CODE || 'CA' }}
+          APP_CUSTOM_DOMAIN: ${{ vars.APP_CUSTOM_DOMAIN }}
+          ADMIN_CUSTOM_DOMAIN: ${{ vars.ADMIN_CUSTOM_DOMAIN }}
+          BUDGET_ALERT_EMAIL: ${{ vars.BUDGET_ALERT_EMAIL }}
+          # The agents stay off until the role grant and the evaluation suite
+          # have been checked against the deployment.
+          AGENTS_GRANT_ROLE: ${{ vars.AGENTS_GRANT_ROLE || 'false' }}
+          AGENTS_ENABLED: ${{ vars.AGENTS_ENABLED || 'false' }}
+        run: |
+          for v in SQL_ADMIN_LOGIN SQL_ADMIN_PASSWORD SEEDLING_JWT_SIGNING_KEY FOUNDRY_ORGANIZATION_NAME; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing $v. Run eng/Bootstrap-Azure.ps1 once, or set it under Settings → Secrets and variables → Actions."
+              exit 1
+            fi
+          done
+
+          outputs="$(az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$INFRA_DEPLOYMENT_NAME" \
+            --template-file eng/infra/main.bicep \
+            --parameters eng/infra/main.bicepparam \
+            --query properties.outputs \
+            --output json)"
+
+          out() { jq -r --arg k "$1" '.[$k].value' <<<"$outputs"; }
+          {
+            echo "api_name=$(out apiName)"
+            echo "api_origin=$(out apiOrigin)"
+            echo "web_swa=$(out webSwaName)"
+            echo "web_host=$(out webSwaHostName)"
+            echo "admin_swa=$(out adminSwaName)"
+            echo "admin_host=$(out adminSwaHostName)"
+            echo "design_swa=$(out designSwaName)"
+            echo "sql_fqdn=$(out sqlServerFqdn)"
+            echo "sql_db=$(out sqlDatabaseName)"
+            echo "foundry_url=$(out foundryBaseUrl)"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Azure resources"
+            echo
+            echo "| Resource | Value |"
+            echo "|---|---|"
+            echo "| API | $(out apiOrigin) |"
+            echo "| App | https://$(out webSwaHostName) |"
+            echo "| Admin app | https://$(out adminSwaHostName) |"
+            echo "| Design system | https://$(out designSwaHostName) |"
+            echo "| SQL | $(out sqlServerFqdn) / $(out sqlDatabaseName) |"
+            echo "| Claude (Foundry) | $(out foundryBaseUrl) → \`$(out claudeDeploymentName)\` |"
+            echo "| CORS origins | $(jq -r '.corsOrigins.value | join(", ")' <<<"$outputs") |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  api:
+    name: Build & deploy API + WebJobs
+    runs-on: ubuntu-24.04
+    needs: [infra]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish API
+        run: dotnet publish "$API_PROJECT" -c Release -o ./publish --nologo
+
+      # Every folder under backend/deploy/webjobs/ (run.sh + settings.job)
+      # becomes a triggered WebJob: the CLI is published once and copied beside
+      # each job's scripts. App Service picks up App_Data/jobs/triggered/<name>.
+      - name: Publish WebJobs
+        run: |
+          cli=./publish/App_Data/jobs/cli
+          dotnet publish "$CLI_PROJECT" -c Release -o "$cli" --nologo
+          for src in "$WEBJOBS_SOURCE"/*/; do
+            [ -f "$src/run.sh" ] || continue
+            name="$(basename "$src")"
+            job=./publish/App_Data/jobs/triggered/$name
+            mkdir -p "$job"
+            cp -r "$cli" "$job/cli"
+            cp "$src/run.sh" "$src/settings.job" "$job/"
+            chmod +x "$job/run.sh"
+            echo "webjob: $name"
+          done
+          rm -rf "$cli"
+
+      - name: Zip publish output
+        run: cd publish && zip -qr ../api.zip .
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # --clean keeps wwwroot identical to the zip; uploads live under /home/data
+      # (see main.bicep) so they survive it.
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp deploy \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "${{ needs.infra.outputs.api_name }}" \
+            --src-path api.zip \
+            --type zip \
+            --clean true \
+            --restart true \
+            --async false \
+            --output none
+
+  # The Web App lists every triggered WebJob the repository ships. On Linux that
+  # needs WEBSITE_SKIP_RUNNING_KUDUAGENT=false (main.bicep); Kudu registers the
+  # jobs a little after the restart, so this waits for them. ARM names the child
+  # resource `<site>/<job>`, so the filter matches the suffix.
+  webjob:
+    name: WebJobs are registered
+    runs-on: ubuntu-24.04
+    needs: [infra, api]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: WebJobs are registered
+        run: |
+          jobs=()
+          for src in "$WEBJOBS_SOURCE"/*/; do
+            [ -f "$src/run.sh" ] && jobs+=("$(basename "$src")")
+          done
+          if [ "${#jobs[@]}" -eq 0 ]; then
+            echo "No WebJobs in $WEBJOBS_SOURCE; nothing to check."
+            exit 0
+          fi
+          for job in "${jobs[@]}"; do
+            registered=false
+            for attempt in $(seq 1 12); do
+              found="$(az webapp webjob triggered list \
+                --resource-group "$AZURE_RESOURCE_GROUP" \
+                --name "${{ needs.infra.outputs.api_name }}" \
+                --query "[?ends_with(name, '/$job')] | length(@)" --output tsv 2>/dev/null || echo 0)"
+              if [ "$found" = "1" ]; then
+                echo "WebJob '$job' is registered."
+                registered=true
+                break
+              fi
+              echo "WebJob '$job' not listed yet (attempt $attempt)"
+              sleep 10
+            done
+            if [ "$registered" != "true" ]; then
+              echo "::error::The API does not list the triggered WebJob '$job'. Check WEBSITE_SKIP_RUNNING_KUDUAGENT=false and App_Data/jobs/triggered/$job in the zip."
+              exit 1
+            fi
+          done
+
+  migrate:
+    name: Apply EF migrations
+    runs-on: ubuntu-24.04
+    needs: [infra, api]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # The server only admits Azure services and this runner, for the length
+      # of this job. The rule is named after the run so a stale one is obvious.
+      - name: Open the SQL firewall for this runner
+        id: firewall
+        run: |
+          ip="$(curl -fsS https://api.ipify.org)"
+          server="${{ needs.infra.outputs.sql_fqdn }}"
+          server="${server%%.*}"
+          echo "server=$server" >> "$GITHUB_OUTPUT"
+          az sql server firewall-rule create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --server "$server" \
+            --name "gha-${{ github.run_id }}" \
+            --start-ip-address "$ip" \
+            --end-ip-address "$ip" \
+            --output none
+
+      - name: seedling migrate
+        env:
+          SQL_FQDN: ${{ needs.infra.outputs.sql_fqdn }}
+          SQL_DB: ${{ needs.infra.outputs.sql_db }}
+          SQL_ADMIN_LOGIN: ${{ secrets.SQL_ADMIN_LOGIN }}
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+        run: |
+          conn="Server=tcp:${SQL_FQDN},1433;Initial Catalog=${SQL_DB};User ID=${SQL_ADMIN_LOGIN};Password=${SQL_ADMIN_PASSWORD};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+          echo "::add-mask::$conn"
+          dotnet run --project "$CLI_PROJECT" -c Release -- migrate --connection "$conn"
+
+      - name: Close the SQL firewall
+        if: always() && steps.firewall.outputs.server != ''
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --server "${{ steps.firewall.outputs.server }}" \
+            --name "gha-${{ github.run_id }}" \
+            --output none
+
+  web:
+    name: Deploy app (SWA)
+    runs-on: ubuntu-24.04
+    # API, then migrations, then the SPA that talks to them.
+    needs: [infra, test-frontend, migrate]
+    steps:
+      - name: Download Angular bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist
+          path: ${{ env.ANGULAR_DIST }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Read the deployment token
+        id: token
+        run: |
+          token="$(az staticwebapp secrets list \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "${{ needs.infra.outputs.web_swa }}" \
+            --query properties.apiKey --output tsv)"
+          echo "::add-mask::$token"
+          echo "value=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.token.outputs.value }}
+          action: upload
+          app_location: ${{ env.ANGULAR_DIST }}
+          skip_app_build: true
+          skip_api_build: true
+
+  admin-web:
+    name: Deploy admin (SWA)
+    runs-on: ubuntu-24.04
+    needs: [infra, test-frontend, migrate]
+    steps:
+      - name: Download admin bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dist
+          path: ${{ env.ADMIN_DIST }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Read the deployment token
+        id: token
+        run: |
+          token="$(az staticwebapp secrets list \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "${{ needs.infra.outputs.admin_swa }}" \
+            --query properties.apiKey --output tsv)"
+          echo "::add-mask::$token"
+          echo "value=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.token.outputs.value }}
+          action: upload
+          app_location: ${{ env.ADMIN_DIST }}
+          skip_app_build: true
+          skip_api_build: true
+
+  # Proves the stack answers after a deploy: the API is up and both SPA shells
+  # serve a deep route. Custom domains are proven when their variable is set.
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-24.04
+    needs: [infra, webjob, web, admin-web]
+    steps:
+      - name: API answers
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors \
+            "${{ needs.infra.outputs.api_origin }}/api/_ping")"
+          echo "GET /api/_ping → $code"
+          [ "$code" = "200" ] || { echo "::error::API returned $code"; exit 1; }
+
+      - name: SPA deep route serves the shell
+        run: |
+          for host in "${{ needs.infra.outputs.web_host }}" "${{ needs.infra.outputs.admin_host }}"; do
+            body="$(curl -fsS --retry 5 --retry-delay 10 --retry-all-errors "https://$host/sign-in")"
+            grep -qE '<(app-root|sl-admin-root)' <<<"$body" || { echo "::error::https://$host/sign-in did not serve the SPA shell"; exit 1; }
+            echo "https://$host/sign-in → OK"
+          done
+
+      - name: App custom domain serves the shell
+        if: ${{ vars.APP_CUSTOM_DOMAIN != '' }}
+        run: |
+          url="https://${{ vars.APP_CUSTOM_DOMAIN }}/sign-in"
+          body="$(curl -fsS --retry 5 --retry-delay 10 --retry-all-errors "$url")"
+          grep -q '<app-root' <<<"$body" || { echo "::error::$url did not serve the app shell"; exit 1; }
+          echo "$url → OK"
+
+      - name: Admin custom domain serves the shell
+        if: ${{ vars.ADMIN_CUSTOM_DOMAIN != '' }}
+        run: |
+          url="https://${{ vars.ADMIN_CUSTOM_DOMAIN }}/sign-in"
+          body="$(curl -fsS --retry 5 --retry-delay 10 --retry-all-errors "$url")"
+          grep -q '<sl-admin-root' <<<"$body" || { echo "::error::$url did not serve the admin shell"; exit 1; }
+          echo "$url → OK"

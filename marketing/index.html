@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f6f4a" />
+    <meta name="description" content="Seedling: a full-stack web application platform." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Seedling" />
+    <meta property="og:description" content="A full-stack web application platform." />
+    <title>Seedling</title>
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="stylesheet" href="assets/seedling.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="header">
+      <div class="container header__inner">
+        <a class="brand" href="/"><span class="brand__mark" aria-hidden="true"></span>Seedling</a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav__link" href="#features">Features</a>
+          <a class="btn btn--primary" href="/sign-in">Sign in</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <section class="hero container">
+        <h1 class="hero__title">A full-stack web application platform.</h1>
+        <p class="hero__lede">
+          An Angular progressive web app, a .NET API and Azure hosting that provisions itself.
+        </p>
+        <a class="btn btn--primary btn--lg" href="/create-account">Get started</a>
+      </section>
+      <section id="features" class="features container">
+        <h2>Features</h2>
+        <ul class="features__list">
+          <li class="feature">
+            <h3>Progressive web app</h3>
+            <p>Installable, offline-ready, served over HTTPS.</p>
+          </li>
+          <li class="feature">
+            <h3>Design system</h3>
+            <p>One component library, documented in Storybook.</p>
+          </li>
+          <li class="feature">
+            <h3>Agents on Azure</h3>
+            <p>Claude in Microsoft Foundry, bounded by spend caps.</p>
+          </li>
+        </ul>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; <span data-year></span> Seedling contributors.</p>
+      </div>
+    </footer>
+    <script src="assets/seedling.js"></script>
+  </body>
+</html>

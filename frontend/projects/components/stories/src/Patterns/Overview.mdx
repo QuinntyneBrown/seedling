@@ -1,0 +1,12 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Patterns/Overview" />
+
+# Patterns
+
+Patterns are whole-screen compositions of real components: the application shell, a list screen with its filters,
+an authentication card, a dialog flow. Each lives in `stories/src/Patterns/<Pattern>/` with an `index.stories.ts`
+and renders the same components the application does, at `layout: 'fullscreen'`, so a screen can be reviewed against
+its mock in `docs/mocks/pages/` before any page code exists.
+
+Add a pattern when a screen composes several components in a way the component stories alone do not show.

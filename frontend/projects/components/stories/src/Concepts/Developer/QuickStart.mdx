@@ -1,0 +1,67 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Concepts/Developer/Quick Start" />
+
+# Quick start
+
+## Run Storybook
+
+From `frontend/`:
+
+```sh
+npm ci
+npm run storybook        # ng run components:storybook → http://localhost:6006
+npm run build-storybook  # static build → frontend/dist/storybook
+```
+
+Storybook is an Angular builder target on the `components` project (`angular.json` → `storybook` /
+`build-storybook`). It compiles the library with the same SCSS include path the app uses, runs zoneless like the app,
+and generates the API tables with compodoc on every start.
+
+## Use a component
+
+Components are standalone. Import the class from the `components` library and use its `sl-*` selector:
+
+```ts
+import { Component } from '@angular/core';
+import { Button } from 'components';
+
+@Component({
+  selector: 'app-save-cta',
+  imports: [Button],
+  templateUrl: './save-cta.html',
+  styleUrl: './save-cta.scss',
+})
+export class SaveCta {}
+```
+
+```html
+<!-- save-cta.html -->
+<sl-button (click)="save()">Save</sl-button>
+```
+
+Class names drop the `Sl` prefix (`Button`, `Chip`, `TopBar`); selectors keep it (`sl-button`, `sl-chip`,
+`sl-top-bar`). Templates and styles always live in their own files.
+
+## Load the global styles
+
+The application `@use`s the library's style entry once; components need nothing else.
+
+```scss
+// projects/seedling/src/styles.scss
+@use '../../components/src/lib/styles';
+@import '@angular/cdk/overlay-prebuilt.css';
+```
+
+`styles/index.scss` forwards `_tokens.scss` (the theme's custom properties, generated from `src/lib/tokens/`),
+`_breakpoints.scss` (the `respond-to()` mixin) and `_global.scss` (reset, base typography, the shell's `<main>` frame
+and `sl-` utilities).
+
+## Dialogs and menus
+
+All modals use `@angular/cdk` Dialog/Overlay; never hand-roll one. Open a dialog with the shared panel classes so it is
+a bottom sheet below 720px and a centred modal above:
+
+```ts
+dialog.open(ConfirmDialog, { panelClass: 'sl-dialog-panel', backdropClass: 'sl-dialog-backdrop' });
+```

@@ -1,0 +1,37 @@
+import { grey, statusColors, white } from '../global/colors';
+import type { BrandVariants, ColorTokens } from '../types';
+
+/** Semantic colour tokens for the light theme, computed from a brand ramp. */
+export const generateColorTokens = (brand: BrandVariants): ColorTokens => ({
+  colorNeutralForeground1: grey[14],
+  colorNeutralForeground2: grey[26],
+  colorNeutralForeground3: grey[38],
+  colorNeutralForegroundDisabled: grey[74],
+  colorNeutralForegroundOnBrand: white,
+  colorNeutralForegroundInverted: white,
+  colorNeutralBackground1: white,
+  colorNeutralBackground2: grey[98],
+  colorNeutralBackground3: grey[94],
+  colorNeutralBackgroundInverted: grey[14],
+  colorNeutralBackgroundDisabled: grey[94],
+  colorNeutralStroke1: grey[82],
+  colorNeutralStroke2: grey[90],
+  colorNeutralStrokeAccessible: grey[38],
+  colorBrandForeground1: brand[80],
+  colorBrandForeground2: brand[70],
+  colorBrandBackground: brand[80],
+  colorBrandBackgroundHover: brand[70],
+  colorBrandBackgroundPressed: brand[60],
+  colorBrandBackground2: brand[160],
+  colorBrandStroke1: brand[80],
+  colorBrandStroke2: brand[140],
+  colorStrokeFocus1: white,
+  colorStrokeFocus2: brand[80],
+  colorStatusSuccessForeground1: statusColors.successForeground,
+  colorStatusSuccessBackground1: statusColors.successBackground,
+  colorStatusWarningForeground1: statusColors.warningForeground,
+  colorStatusWarningBackground1: statusColors.warningBackground,
+  colorStatusDangerForeground1: statusColors.dangerForeground,
+  colorStatusDangerBackground1: statusColors.dangerBackground,
+  colorBackgroundOverlay: 'rgba(0, 0, 0, 0.4)',
+});

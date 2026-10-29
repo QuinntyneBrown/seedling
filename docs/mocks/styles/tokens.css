@@ -1,0 +1,39 @@
+/* Seedling mock design tokens. The mocks own this file; the product's theme is
+   frontend/projects/components/src/lib/tokens and the two must agree by role. */
+
+:root {
+  --colorNeutralForeground1: #242424;
+  --colorNeutralForeground2: #424242;
+  --colorNeutralForeground3: #616161;
+  --colorNeutralForegroundOnBrand: #ffffff;
+  --colorNeutralBackground1: #ffffff;
+  --colorNeutralBackground2: #fafafa;
+  --colorNeutralBackground3: #f0f0f0;
+  --colorNeutralStroke1: #d1d1d1;
+  --colorNeutralStroke2: #e6e6e6;
+  --colorBrandForeground1: #1f6f4a;
+  --colorBrandBackground: #1f6f4a;
+  --colorBrandBackgroundHover: #1c7848;
+  --colorBrandBackground2: #e8f5ec;
+  --colorBrandStroke1: #1f6f4a;
+  --colorStrokeFocus2: #1f6f4a;
+
+  --fontFamilyBase: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --fontSizeBase300: 0.875rem;
+  --fontSizeBase400: 1rem;
+  --fontSizeHero800: 2.25rem;
+  --lineHeightNormal: 1.5;
+  --lineHeightTight: 1.2;
+
+  --spacingS: 8px;
+  --spacingM: 12px;
+  --spacingL: 16px;
+  --spacingXL: 24px;
+  --borderRadiusMedium: 8px;
+  --borderRadiusLarge: 12px;
+  --strokeWidthThin: 1px;
+  --strokeWidthThick: 2px;
+  --layoutContentMaxWidth: 1120px;
+  --layoutControlHeight: 44px;
+  --durationFast: 100ms;
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 48" width="260" height="48" role="img" aria-label="Seedling">
+  <rect width="48" height="48" rx="11" fill="#1f6f4a"/>
+  <path d="M24 39V23" stroke="#e8f5ec" stroke-width="3" stroke-linecap="round"/>
+  <path d="M24 25c0-7 5-12 13-12 0 7-5 12-13 12z" fill="#8fd19e"/>
+  <path d="M24 30c0-6-4.5-10.5-11.5-10.5 0 6 4.5 10.5 11.5 10.5z" fill="#c9ecd0"/>
+  <text x="62" y="32" font-family="Inter, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="26" font-weight="700" fill="#242424">Seedling</text>
+</svg>

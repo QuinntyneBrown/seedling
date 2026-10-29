@@ -1,0 +1,28 @@
+// SCSS breakpoint helpers — values mirror the responsive overrides in
+// `tokens/themes/responsive.ts`. Components use the `respond-to()` mixin so
+// the breakpoint constants live in one place.
+//
+// The breakpoints are in rem so they follow the reader's text size (WCAG
+// 1.4.4): at the default 16px they are 379, 720 and 1024px. xsmall is a
+// max-width tier for 320-379px phones.
+$bp-xsmall-max: 23.6875rem;
+$bp-tablet: 45rem;
+$bp-desktop: 64rem;
+
+@mixin respond-to($size) {
+  @if $size == xsmall {
+    @media (max-width: #{$bp-xsmall-max}) {
+      @content;
+    }
+  } @else if $size == tablet {
+    @media (min-width: #{$bp-tablet}) {
+      @content;
+    }
+  } @else if $size == desktop {
+    @media (min-width: #{$bp-desktop}) {
+      @content;
+    }
+  } @else {
+    @error "respond-to(): unknown size `#{$size}` (expected xsmall, tablet or desktop)";
+  }
+}

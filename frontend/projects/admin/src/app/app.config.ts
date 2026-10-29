@@ -1,0 +1,21 @@
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
+
+import { API_BASE_URL } from 'api';
+
+import { environment } from '../environments/environment';
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })),
+    provideHttpClient(withFetch()),
+    { provide: API_BASE_URL, useValue: environment.apiBaseUrl },
+
+    // Composition root: the same tokens as the main app, bound to the same
+    // implementations from the `api` library.
+    //   { provide: SOME_SERVICE, useExisting: SomeService },
+  ],
+};

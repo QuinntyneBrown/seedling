@@ -1,0 +1,108 @@
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Two-server configuration:
+ *
+ *   - The Angular dev server (the implementation under test) runs on
+ *     http://localhost:4200. Behaviour specs and visual verification target
+ *     it; guarded routes need the API on :5100 with the seeded accounts:
+ *     `pwsh eng/Start-E2eApi.ps1` starts it on a fresh, seeded SQLite file with
+ *     no database server.
+ *
+ *   - Seedling Admin runs on http://localhost:4300 for the `admin` project.
+ *
+ *   - The mocks (docs/mocks) are served on http://localhost:5173 by
+ *     `http-server` when SL_BASELINE=1. Visual baselines are captured from
+ *     them once with `npm run baseline` and committed. Subsequent runs
+ *     compare the Angular implementation against those baselines
+ *     pixel by pixel.
+ *
+ * Snapshot path convention: tests under `tests/visual/` use
+ * `toHaveScreenshot()` whose baselines live in
+ * `tests/visual/<spec>.spec.ts-snapshots/<name>-<project>-<platform>.png`.
+ * The baseline capture shares the same project names as the verify run so
+ * they read and write the same files.
+ *
+ * Parity policy: baselines are only taken of regions whose copy is fixed or
+ * seed-derived; dated or data-driven regions are masked. Failures are fixed
+ * in the components, never by loosening the ratio below.
+ */
+
+const VIEWPORTS = {
+  mobile: { width: 390, height: 844 },
+  tablet: { width: 820, height: 1180 },
+  desktop: { width: 1440, height: 900 },
+} as const;
+
+const isBaselineCapture = process.env['SL_BASELINE'] === '1';
+
+/** Specs under tests/admin/ run only in the `admin` project (the admin app on :4300). */
+const ADMIN_SPECS = /tests[\\/]admin[\\/]/;
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: false,
+  workers: 1,
+  retries: 0,
+  reporter: [['list']],
+  forbidOnly: !!process.env['CI'],
+  timeout: 30_000,
+  expect: {
+    timeout: 8_000,
+    toHaveScreenshot: {
+      // Pixel parity with the mocks. A handful of sub-pixel rasterisation
+      // diffs (font hinting, anti-aliasing) are unavoidable across runs, so
+      // a tiny ratio is allowed but no per-pixel colour drift.
+      maxDiffPixelRatio: 0.005,
+      threshold: 0.05,
+      animations: 'disabled',
+      caret: 'hide',
+    },
+  },
+  use: {
+    baseURL: isBaselineCapture ? 'http://localhost:5173' : 'http://localhost:4200',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'off',
+  },
+  webServer: isBaselineCapture
+    ? {
+        command: 'npx http-server ../docs/mocks -p 5173 -c-1 --cors --silent',
+        url: 'http://localhost:5173/index.html',
+        reuseExistingServer: !process.env['CI'],
+        timeout: 30_000,
+        cwd: __dirname,
+      }
+    : [
+        {
+          command: 'npm run start -- --port 4200',
+          url: 'http://localhost:4200',
+          reuseExistingServer: !process.env['CI'],
+          timeout: 180_000,
+          cwd: `${__dirname}/../frontend`,
+        },
+        {
+          command: 'npm run start:admin -- --port 4300',
+          url: 'http://localhost:4300',
+          reuseExistingServer: !process.env['CI'],
+          timeout: 180_000,
+          cwd: `${__dirname}/../frontend`,
+        },
+      ],
+  projects: [
+    ...(Object.keys(VIEWPORTS) as Array<keyof typeof VIEWPORTS>).map((name) => ({
+      name,
+      use: { ...devices['Desktop Chrome'], viewport: VIEWPORTS[name] },
+      testIgnore: ADMIN_SPECS,
+    })),
+    {
+      name: 'admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: VIEWPORTS.desktop,
+        baseURL: isBaselineCapture ? 'http://localhost:5173' : 'http://localhost:4300',
+      },
+      testMatch: ADMIN_SPECS,
+    },
+  ],
+});

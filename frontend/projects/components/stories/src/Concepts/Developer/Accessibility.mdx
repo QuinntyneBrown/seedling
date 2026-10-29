@@ -1,0 +1,25 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Concepts/Developer/Accessibility" />
+
+# Accessibility
+
+The design system targets WCAG 2.2 AA. The `@storybook/addon-a11y` panel runs on every story and is configured to fail
+loudly; fix the component, never the check.
+
+## Rules
+
+- **Names.** Every control has an accessible name: visible text, `aria-label` for icon-only buttons, `<label>` for
+  fields. An image that conveys meaning has `alt`; a decorative one has `alt=""` or `aria-hidden="true"`.
+- **State is ARIA.** Selected is `aria-current`, toggled is `aria-pressed`, invalid is `aria-invalid` with
+  `aria-describedby` pointing at the message, on/off is `role="switch"` with `aria-checked`. A class alone is never
+  state.
+- **Keyboard.** Everything reachable by pointer is reachable by keyboard in a sensible order. Focus is visible
+  (`:focus-visible` with `--colorStrokeFocus2`) and never trapped outside a dialog.
+- **Contrast.** Text is at least 4.5:1, large text and control edges at least 3:1, against the surface they sit on.
+  Tokens pair foregrounds and backgrounds for you; keep to the pairs.
+- **Text size.** Breakpoints and control heights are in rem so the layout follows the reader's text size.
+- **Motion.** Transitions read `--duration*` tokens, which drop to zero under `prefers-reduced-motion: reduce`.
+- **Dialogs.** CDK Dialog manages focus, `aria-modal` and Escape; give every dialog a heading referenced by
+  `aria-labelledby`.
+- **Landmarks.** One `<main id="main">` per screen, a skip link to it, `<nav aria-label>` for each navigation.

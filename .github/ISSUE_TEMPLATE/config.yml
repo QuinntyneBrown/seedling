@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/QuinntyneBrown/seedling/security/advisories/new
+    about: Report a vulnerability privately; never in a public issue.
+  - name: Support
+    url: https://github.com/QuinntyneBrown/seedling/blob/main/SUPPORT.md
+    about: What to include in a good report.

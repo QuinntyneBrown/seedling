@@ -1,0 +1,17 @@
+// The skip link is the one piece of chrome every screen shares until the
+// shell components (top bar, bottom navigation) land in the design system.
+.app-skip-link {
+  position: absolute;
+  top: var(--spacingVerticalS);
+  left: var(--spacingHorizontalS);
+  z-index: var(--zIndexToast);
+  padding: var(--spacingVerticalS) var(--spacingHorizontalM);
+  border-radius: var(--borderRadiusMedium);
+  background: var(--colorBrandBackground);
+  color: var(--colorNeutralForegroundOnBrand);
+  transform: translateY(-200%);
+
+  &:focus-visible {
+    transform: none;
+  }
+}

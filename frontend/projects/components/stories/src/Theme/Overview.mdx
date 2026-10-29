@@ -1,0 +1,39 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Theme/Overview" />
+
+# Design tokens
+
+Seedling's tokens follow the [Fluent UI v9 token model](https://react.fluentui.dev/?path=/docs/theme-theme-designer--docs):
+a typed **theme** object, built in layers, whose keys are the CSS custom property names every component reads. The
+source lives in `src/lib/tokens/`.
+
+| Layer      | Where            | What                                                                                                                  |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Global** | `tokens/global/` | Raw values: the brand ramp, named palettes and the type, spacing, radius, stroke, motion, layout and z ramps.         |
+| **Alias**  | `tokens/alias/`  | Semantic colours computed from the globals: `colorNeutralForeground1`, `colorBrandBackground`, `colorStatus…`.        |
+| **Theme**  | `tokens/themes/` | `seedlingLightTheme = createLightTheme(brandSeedling)`: one flat object holding every token, plus responsive retunes. |
+
+`npm run tokens` (from `frontend/`) renders the theme to `src/lib/styles/_tokens.scss`, the `:root` custom properties
+the app and Storybook load, and to the typed `tokens` object. Both files are generated; CI runs `npm run tokens:check`.
+
+## Using tokens
+
+In a component stylesheet, read the custom property. Choose by **role** (`colorBrandForeground1` for brand text,
+`colorBrandBackground` for a brand fill, `colorBrandStroke1` for a brand border) even where two roles share a value
+today.
+
+```scss
+.chip--selected {
+  background: var(--colorNeutralBackgroundInverted);
+  color: var(--colorNeutralForegroundInverted);
+  border-radius: var(--borderRadiusCircular);
+}
+```
+
+In TypeScript, read the typed object: `tokens.colorBrandBackground === 'var(--colorBrandBackground)'`.
+
+## Re-branding
+
+A new brand is a new sixteen-step ramp passed to `createLightTheme(ramp)`, not a stylesheet fork. A scoped theme writes
+a `PartialTheme` onto a subtree as custom properties.

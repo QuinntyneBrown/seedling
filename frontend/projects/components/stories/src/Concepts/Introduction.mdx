@@ -1,0 +1,61 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Concepts/Introduction" />
+
+<div
+  className="sb-unstyled"
+  style={{
+    background: 'var(--colorBrandBackground2)',
+    borderRadius: 'var(--borderRadiusXLarge)',
+    padding: '40px 32px',
+    margin: '0 0 32px',
+  }}
+>
+  <p style={{ color: 'var(--colorBrandForeground2)', fontWeight: 600, margin: 0 }}>
+    Seedling Design System
+  </p>
+  <h1
+    style={{
+      fontSize: 'var(--fontSizeHero800)',
+      margin: '8px 0 12px',
+      lineHeight: 'var(--lineHeightTight)',
+    }}
+  >
+    One library. Every component.
+  </h1>
+  <p style={{ color: 'var(--colorNeutralForeground2)', maxWidth: 560, margin: 0 }}>
+    Tokens, Angular components and responsive patterns for Seedling. Everything here is the real{' '}
+    <code>components</code> library the applications ship, rendered live.
+  </p>
+</div>
+
+## What's here
+
+| Section                                                      | What you'll find                                                                                     |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| [Concepts](?path=/docs/concepts-developer-quick-start--docs) | Quick start, how components are styled, accessibility rules and how to write stories.                |
+| [Theme](?path=/docs/theme-overview--docs)                    | Fluent-style design tokens: global ramps, alias colours and the theme, rendered live from the theme. |
+| Components                                                   | Every `sl-*` component with its API table (inputs, outputs, JSDoc), examples and best practices.     |
+| Patterns                                                     | Compositions of components that match whole screens.                                                 |
+
+## Principles
+
+- **The mocks are the source of truth.** `docs/mocks` is the design. Components carry the mocks' BEM classes verbatim,
+  so one set of Playwright locators and visual baselines serves both the mocks and the app.
+- **One primary action per screen.** The brand fill (`--colorBrandBackground`) marks the single next step; everything
+  else is quiet.
+- **State is ARIA.** Selection, pressed and invalid states are `aria-current`, `aria-pressed`, `aria-invalid` and
+  `role="switch"`, never a class alone.
+- **Phone first, full width later.** A bottom navigation below 720px, a sticky top bar above it, wider layouts from
+  1024px.
+- **Every component is split across files.** `<name>.ts`, `<name>.html`, `<name>.scss`; no inline templates or styles.
+
+## Where the code lives
+
+| Path                                           | Purpose                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| `frontend/projects/components/src/lib/`        | Component source (`<name>/<name>.ts`, `.html`, `.scss`)         |
+| `frontend/projects/components/src/lib/styles/` | Tokens, breakpoints and global chrome                           |
+| `frontend/projects/components/src/lib/tokens/` | The TypeScript theme the tokens are generated from              |
+| `frontend/projects/components/stories/src/`    | This Storybook: concept and theme MDX, one folder per component |
+| `frontend/projects/components/.storybook/`     | Storybook configuration, manager theme and branding             |
